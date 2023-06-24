@@ -1,11 +1,13 @@
-import { Box, Button, Container, FormGroup, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Modal, Paper, Stack, TextField, Typography } from "@mui/material"
+import { Box, Button, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Modal, Paper, Stack, TextField, Typography } from "@mui/material"
 
 import PeopleIcon from '@mui/icons-material/People';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { useState } from "react";
-import { DataGrid, GridColDef, GridRowSelectionModel, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridValueGetterParams } from '@mui/x-data-grid'
+import { DataGrid, GridColDef, GridToolbarContainer } from '@mui/x-data-grid'
 import { api } from "~/utils/api";
 import AddTournament from "~/components/AddTournament";
+import HomeIcon from '@mui/icons-material/Home';
+import Link from "next/link";
 
 const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 90 },
@@ -131,48 +133,53 @@ export default () => {
   const [selectedItem, setSelectedItem] = useState<'users' | 'events'>('events')
   const { data: users } = api.user.getAll.useQuery()
 
-  return <Container sx={{ mt: '50px', height: '100%' }}>
-    <Stack direction='row' spacing={2} sx={{ height: '100%' }}>
-      <Paper sx={{ height: '100%' }}>
-        <List>
-          <ListItem
-            disablePadding
-            onClick={() => setSelectedItem('users')}
-          >
-            <ListItemButton selected={selectedItem == 'users'}>
-              <ListItemIcon>
-                <PeopleIcon />
-              </ListItemIcon>
-              <ListItemText primary='Users' />
-            </ListItemButton>
-          </ListItem>
-          <ListItem
-            disablePadding
-            onClick={() => setSelectedItem('events')}
-          >
-            <ListItemButton selected={selectedItem == 'events'}>
-              <ListItemIcon>
-                <EmojiEventsIcon />
-              </ListItemIcon>
-              <ListItemText primary='Events' />
-            </ListItemButton>
-          </ListItem>
-        </List>
-      </Paper>
-      <Paper sx={{ width: '100%', padding: '40px' }}>
-        {
-          selectedItem === 'users' ?
-            <DataGrid
-              rows={users ?? []}
-              columns={columns}
-              disableRowSelectionOnClick
-              slots={{
-                toolbar: CustomToolbar
-              }}
-            />
-            : <AddTournament />
-        }
-      </Paper>
+  return <Box padding={4}>
+    <Stack direction='column' spacing={3}>
+      <Link href='/'>
+        <HomeIcon fontSize="large" />
+      </Link>
+      <Stack direction='row' spacing={2} sx={{ height: '100%' }}>
+        <Paper sx={{ height: '100%' }}>
+          <List>
+            <ListItem
+              disablePadding
+              onClick={() => setSelectedItem('users')}
+            >
+              <ListItemButton selected={selectedItem == 'users'}>
+                <ListItemIcon>
+                  <PeopleIcon />
+                </ListItemIcon>
+                <ListItemText primary='Users' />
+              </ListItemButton>
+            </ListItem>
+            <ListItem
+              disablePadding
+              onClick={() => setSelectedItem('events')}
+            >
+              <ListItemButton selected={selectedItem == 'events'}>
+                <ListItemIcon>
+                  <EmojiEventsIcon />
+                </ListItemIcon>
+                <ListItemText primary='Events' />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Paper>
+        <Paper sx={{ width: '100%', padding: '40px' }}>
+          {
+            selectedItem === 'users' ?
+              <DataGrid
+                rows={users ?? []}
+                columns={columns}
+                disableRowSelectionOnClick
+                slots={{
+                  toolbar: CustomToolbar
+                }}
+              />
+              : <AddTournament />
+          }
+        </Paper>
+      </Stack>
     </Stack>
-  </Container>
+  </Box>
 }
