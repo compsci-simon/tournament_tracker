@@ -5,6 +5,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { useState } from "react";
 import { DataGrid, GridColDef, GridRowSelectionModel, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridValueGetterParams } from '@mui/x-data-grid'
 import { api } from "~/utils/api";
+import AddTournament from "~/components/AddTournament";
 
 const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 90 },
@@ -127,7 +128,7 @@ function CustomToolbar() {
 }
 
 export default () => {
-  const [selectedItem, setSelectedItem] = useState<'users' | 'events'>('users')
+  const [selectedItem, setSelectedItem] = useState<'users' | 'events'>('events')
   const { data: users } = api.user.getAll.useQuery()
 
   return <Container sx={{ mt: '50px', height: '100%' }}>
@@ -158,7 +159,7 @@ export default () => {
           </ListItem>
         </List>
       </Paper>
-      <Paper sx={{ width: '100%', p: 'md' }} >
+      <Paper sx={{ width: '100%', padding: '40px' }}>
         {
           selectedItem === 'users' ?
             <DataGrid
@@ -169,7 +170,7 @@ export default () => {
                 toolbar: CustomToolbar
               }}
             />
-            : null
+            : <AddTournament />
         }
       </Paper>
     </Stack>
