@@ -12,10 +12,28 @@ datasource db {
 }
 
 model User {
-    id         String   @id @default(cuid())
-    createdAt  DateTime @default(now())
-    firstName  String
-    lastName   String
-    rating     Int
-    totalGames Int
+    id          String       @id @default(cuid())
+    createdAt   DateTime     @default(now())
+    firstName   String
+    lastName    String
+    rating      Int
+    totalGames  Int
+    Games       Game[]
+    Tournaments Tournament[]
+}
+
+model Game {
+    id           String      @id @default(cuid())
+    time         DateTime    @default(now())
+    Tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+    tournamentId String
+    players      User[]
+}
+
+model Tournament {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    name      String
+    players   User[]
+    games     Game[]
 }
