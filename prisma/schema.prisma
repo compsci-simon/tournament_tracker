@@ -18,16 +18,19 @@ model User {
     lastName    String
     rating      Int
     totalGames  Int
-    Games       Game[]
-    Tournaments Tournament[]
+    tournaments Tournament[]
+    games       Game[]
 }
 
 model Game {
-    id           String      @id @default(cuid())
-    time         DateTime    @default(now())
-    Tournament   Tournament? @relation(fields: [tournamentId], references: [id])
-    tournamentId String
-    players      User[]
+    id            String     @id @default(cuid())
+    time          DateTime   @default(now())
+    round         Int
+    Tournament    Tournament @relation(fields: [tournamentId], references: [id])
+    tournamentId  String
+    players       User[]
+    player1Points Int        @default(0)
+    player2Points Int        @default(0)
 }
 
 model Tournament {
