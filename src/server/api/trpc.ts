@@ -12,6 +12,19 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 import { prisma } from "~/server/db";
 
+import {
+  createTRPCReact,
+  type inferReactQueryProcedureOptions,
+} from '@trpc/react-query';
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
+import type { AppRouter } from './root';
+
+// infer the types for your router
+export type ReactQueryOptions = inferReactQueryProcedureOptions<AppRouter>;
+export type RouterInputs = inferRouterInputs<AppRouter>;
+export type RouterOutputs = inferRouterOutputs<AppRouter>;
+
+export const trpc = createTRPCReact<AppRouter>();
 /**
  * 1. CONTEXT
  *
