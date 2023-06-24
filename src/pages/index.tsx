@@ -1,13 +1,14 @@
-import styles from "./index.module.css";
 import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import NavBar from '../components/NavBar'
+import { Box, Paper, Stack, Typography } from "@mui/material";
 import { api } from "~/utils/api";
+import { calculateGameSchedule } from "~/utils/tournament";
 
 export default function Home() {
-  const router = useRouter()
+  const { data: tournaments } = api.tournament.getAll.useQuery()
+  console.table(calculateGameSchedule(['Simon', 'Chantal', 'Mike', 'Tim', 'Ralph']))
 
-  router.push('/admin')
   return (
     <>
       <Head>
@@ -16,6 +17,26 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main >
+        <NavBar />
+        <Box padding={4}>
+          <Stack spacing={2}>
+            {tournaments?.map(tournament => {
+              return <Link key={tournament.id} href={`/tournaments/${tournament.id}`}>
+                <Paper >
+                  <Box padding={2}>
+                    <Typography variant="h5">
+                      {tournament.name}
+                    </Typography>
+                    <hr />
+                    {tournament.players?.map(player => {
+                      return <span key={player.firstName}>{player.firstName}</span>
+                    })}
+                  </Box>
+                </Paper>
+              </Link>
+            })}
+          </Stack>
+        </Box>
       </main>
     </>
   );
