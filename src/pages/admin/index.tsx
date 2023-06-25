@@ -8,6 +8,7 @@ import { api } from "~/utils/api";
 import AddTournament from "~/components/AddTournament";
 import HomeIcon from '@mui/icons-material/Home';
 import Link from "next/link";
+import Layout from "~/components/Layout";
 
 const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 90 },
@@ -129,15 +130,12 @@ function CustomToolbar() {
   );
 }
 
-export default () => {
+export default function Page() {
   const [selectedItem, setSelectedItem] = useState<'users' | 'events'>('events')
   const { data: users } = api.user.getAll.useQuery()
 
   return <Box padding={4}>
     <Stack direction='column' spacing={3}>
-      <Link href='/'>
-        <HomeIcon fontSize="large" />
-      </Link>
       <Stack direction='row' spacing={2} sx={{ height: '100%' }}>
         <Paper sx={{ height: '100%' }}>
           <List>
@@ -182,4 +180,10 @@ export default () => {
       </Stack>
     </Stack>
   </Box>
+}
+
+Page.getLayout = function getLayout(page: React.ReactElement) {
+  return <Layout>
+    {page}
+  </Layout>
 }
