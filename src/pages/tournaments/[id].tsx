@@ -5,6 +5,8 @@ import { RouterOutputs } from "~/server/api/trpc"
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import ReplayIcon from '@mui/icons-material/Replay';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import Layout from "~/components/Layout";
 
 type TournamentType = RouterOutputs['tournament']['getTournament']
 
@@ -67,6 +69,8 @@ const renderTables = (
       winner = `${game.players[0]?.firstName} ${game.players[0]?.lastName}`
     } else if (game.player1Points < game.player2Points) {
       winner = `${game.players[1]?.firstName} ${game.players[1]?.lastName}`
+    } else if (game.player1Points == game.player2Points && game.player1Points > 0) {
+      winner = 'Draw'
     }
     return {
       id: game.id,
@@ -109,6 +113,7 @@ export default function TournamentView() {
   const [selectedGame, setSelectedGame] = useState<string | undefined>()
   const [player1Points, setPlayer1Points] = useState(0)
   const [player2Points, setPlayer2Points] = useState(0)
+  const [leaderboard, setLeaderboard] = useState({ first: '', second: '', third: '' })
   const utils = api.useContext()
   const { mutate: updatePointsMutation } = api.tournament.setGamePoints.useMutation({
     onSuccess() {
@@ -175,6 +180,41 @@ export default function TournamentView() {
         </Stack>
       </Box>
     </Modal>
-    {tournamentData ? renderTables(tournamentData, setModalState, setSelectedGame) : null}
+    <Stack spacing={2}>
+      <Paper>
+        <Box padding={2}>
+          <Typography variant="h6">
+            Tournament summary
+          </Typography>
+          <Stack>
+            <Box>
+              <Stack direction='row' alignItems='center'>
+                <EmojiEventsIcon fontSize="large" style={{ color: '#FFD700' }} />
+                {leaderboard.first}
+              </Stack>
+            </Box>
+            <Box>
+              <Stack direction='row' alignItems='center'>
+                <EmojiEventsIcon fontSize="large" style={{ color: '#C0C0C0' }} />
+                {leaderboard.second}
+              </Stack>
+            </Box>
+            <Box>
+              <Stack direction='row' alignItems='center'>
+                <EmojiEventsIcon fontSize="large" style={{ color: '#CD7F32' }} />
+                {leaderboard.third}
+              </Stack>
+            </Box>
+          </Stack>
+        </Box>
+      </Paper>
+      {tournamentData ? renderTables(tournamentData, setModalState, setSelectedGame) : null}
+    </Stack>
   </Box>
+}
+
+TournamentView.getLayout = function getLayout(page: React.ReactElement) {
+  return <Layout>
+    {page}
+  </Layout>
 }
