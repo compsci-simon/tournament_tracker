@@ -16,10 +16,17 @@ model User {
     createdAt   DateTime     @default(now())
     firstName   String
     lastName    String
-    rating      Int
-    totalGames  Int
     tournaments Tournament[]
     games       Game[]
+    Rating      Rating[]
+}
+
+model Rating {
+    id     String   @id @default(cuid())
+    time   DateTime @default(now())
+    rating Int
+    userId String
+    player User     @relation(fields: [userId], references: [id])
 }
 
 model Game {
