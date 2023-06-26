@@ -5,8 +5,11 @@ import { api } from "~/utils/api"
 import { Button, Stack, TextField, Typography } from "@mui/material"
 
 type UserType = RouterOutputs['user']['getAll']
-
-export default function AddTournament() {
+type AddTournamentProps = {
+  handleSubmit: () => void
+  handleCancel: () => void
+}
+export default function AddTournament({ handleSubmit, handleCancel }: AddTournamentProps) {
   const { data: users } = api.user.getAll.useQuery()
   const [left, setLeft] = useState<UserType>([])
   const [right, setRight] = useState<UserType>([])
@@ -20,12 +23,11 @@ export default function AddTournament() {
       setTournamentName('')
     }
   })
-  const { data: tournaments } = api.tournament.getAll.useQuery()
-  console.log(tournaments)
 
   useEffect(() => {
     setLeft(users ?? [])
   }, [users])
+
   return <Stack spacing={2}>
     <TextField
       label='Tournament name'
@@ -38,14 +40,25 @@ export default function AddTournament() {
       </Typography>
       <TransferList left={left} setLeft={setLeft} right={right} setRight={setRight} />
     </Stack>
-    <div>
+    <Stack direction='row' spacing={1} justifyContent='end'>
+      <Button
+        color='error'
+        variant='outlined'
+        onClick={handleCancel}
+      >
+        Cancel
+      </Button>
       <Button
         variant="outlined"
         onClick={() => {
           const playerIds = right.map(user => user.id)
           createTournament({ name: tournamentName, playerIds })
+          handleSubmit()
         }}
-      >Create</Button>
-    </div>
+      >
+        Create
+      </Button>
+    </Stack>
+
   </Stack>
 }
