@@ -90,7 +90,7 @@ const renderTables = (
 
   return <Stack spacing={2}>
     {tournamentRounds.map(round => {
-      return <Paper key={`${round}`}>
+      return <Paper key={`${round.index}`}>
         <Box padding={2}>
           Round {round.index}
           <hr />
@@ -133,6 +133,9 @@ export default function TournamentView() {
     tournamentId = tournamentId[0]!
   }
   const { data: tournamentData } = api.tournament.getTournament.useQuery({
+    id: tournamentId
+  })
+  const { data: tournamentLeaders } = api.tournament.tournamentLeaders.useQuery({
     id: tournamentId
   })
   const selectedGameData = tournamentData?.games.filter(game => game.id == selectedGame)[0]
@@ -183,28 +186,22 @@ export default function TournamentView() {
     <Stack spacing={2}>
       <Paper>
         <Box padding={2}>
-          <Typography variant="h6">
-            Tournament summary
-          </Typography>
+          <Stack direction='row' alignItems='center' spacing={1}>
+            <EmojiEventsIcon fontSize="large" />
+            <Typography variant="h6">
+              Tournament leaders
+            </Typography>
+          </Stack>
           <Stack>
-            <Box>
-              <Stack direction='row' alignItems='center'>
-                <EmojiEventsIcon fontSize="large" style={{ color: '#FFD700' }} />
-                {leaderboard.first}
-              </Stack>
-            </Box>
-            <Box>
-              <Stack direction='row' alignItems='center'>
-                <EmojiEventsIcon fontSize="large" style={{ color: '#C0C0C0' }} />
-                {leaderboard.second}
-              </Stack>
-            </Box>
-            <Box>
-              <Stack direction='row' alignItems='center'>
-                <EmojiEventsIcon fontSize="large" style={{ color: '#CD7F32' }} />
-                {leaderboard.third}
-              </Stack>
-            </Box>
+            <Typography variant='overline'>
+              First - {tournamentLeaders?.first ?? ''}
+            </Typography>
+            <Typography variant='overline'>
+              Second - {tournamentLeaders?.second ?? ''}
+            </Typography>
+            <Typography variant='overline'>
+              Third - {tournamentLeaders?.third ?? ''}
+            </Typography>
           </Stack>
         </Box>
       </Paper>
