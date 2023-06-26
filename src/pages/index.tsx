@@ -69,7 +69,7 @@ export default function Page() {
                   </Typography>
                 </Stack>
                 <Typography variant='overline'>
-                  Moore Laura
+                  {stats?.biggestGainer?.name} - {stats?.biggestGainer?.increase}
                 </Typography>
               </Stack>
             </Box>
