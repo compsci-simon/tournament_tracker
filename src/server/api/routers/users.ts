@@ -6,7 +6,7 @@ export const userRouter = createTRPCRouter({
     return ctx.prisma.user.findMany();
   }),
   addUser: publicProcedure
-    .input(z.object({ firstName: z.string(), lastName: z.string() }))
+    .input(z.object({ firstName: z.string(), lastName: z.string(), email: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findFirst({
         where: {
@@ -21,8 +21,7 @@ export const userRouter = createTRPCRouter({
         data: {
           firstName: input.firstName,
           lastName: input.lastName,
-          totalGames: 0,
-          rating: 0
+          email: input.email
         }
       })
     }),
