@@ -1,8 +1,7 @@
-import { Games, PlaylistRemoveSharp } from "@mui/icons-material";
-import { TRPCError } from "@trpc/server";
-import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { calculateGameSchedule } from "~/utils/tournament";
+import { TRPCError } from "@trpc/server"
+import { z } from "zod"
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc"
+import { calculateGameSchedule, getLeadersFromList, weeksBiggestGainer } from "~/utils/tournament"
 
 const colors = [
   {
@@ -85,8 +84,12 @@ const colors = [
     borderColor: 'rgb(128, 0, 0)',
     backgroundColor: 'rgba(128, 0, 0, 0.5)'
   }
-];
+]
+const kFactor = 25
 
+function calculateExpectedOutcome(playerRatingA: number, playerRatingB: number) {
+  return 1 / (1 + Math.pow(10, (playerRatingB - playerRatingA) / 400))
+}
 
 const defaultBorderColor = 'rgb(255, 99, 132)'
 const defaultBackgroundColor = 'rgba(255, 99, 132, 0.5)'
@@ -109,7 +112,7 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
       if (t) {
-        return;
+        return
       }
       const schedule = calculateGameSchedule(input.playerIds)
       return await ctx.prisma.tournament.create({
@@ -154,14 +157,72 @@ export const tournamentRouter = createTRPCRouter({
   setGamePoints: publicProcedure
     .input(z.object({ gameId: z.string(), player1Points: z.number(), player2Points: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const game = ctx.prisma.game.findFirst({
+      const game = await ctx.prisma.game.findFirst({
         where: {
           id: input.gameId
+        },
+        include: {
+          players: true
         }
       })
-      if (!game) {
+      const player1 = game?.players[0]
+      const player2 = game?.players[1]
+      if (!(player1 && player2)) {
         return
       }
+      await ctx.prisma.game.update({
+        where: {
+          id: input.gameId
+        },
+        data: {
+          ratings: {}
+        }
+      })
+      const player1Rating = await ctx.prisma.ratingHistory.findFirst({
+        where: {
+          id: player1!.id
+        },
+        orderBy: {
+          time: 'desc'
+        }
+      })
+      const player2Rating = await ctx.prisma.ratingHistory.findFirst({
+        where: {
+          id: player2!.id
+        },
+        orderBy: {
+          time: 'desc'
+        }
+      })
+      const expectedOutcome1 = calculateExpectedOutcome(player1Rating?.rating ?? 1200, player2Rating?.rating ?? 1200)
+      const expectedOutcome2 = 1 - expectedOutcome1
+      const outcome = input.player1Points > input.player2Points ? 1 : 0
+      const player1RatingChange = kFactor * (outcome - expectedOutcome1)
+      const player2RatingChange = kFactor * ((1 - outcome) - expectedOutcome2)
+      const player1NewRating = player1Rating?.rating ?? 1200 + player1RatingChange
+      const player2NewRating = player2Rating?.rating ?? 1200 + player2RatingChange
+      const rating1 = await ctx.prisma.ratingHistory.create({
+        data: {
+          rating: player1NewRating,
+          player: {
+            connect: ({ id: player1.id })
+          },
+          game: {
+            connect: ({ id: game.id })
+          }
+        }
+      })
+      const rating2 = await ctx.prisma.ratingHistory.create({
+        data: {
+          rating: player2NewRating,
+          player: {
+            connect: ({ id: player2.id })
+          },
+          game: {
+            connect: ({ id: game.id })
+          }
+        }
+      })
       return ctx.prisma.game.update({
         where: {
           id: input.gameId
@@ -169,6 +230,9 @@ export const tournamentRouter = createTRPCRouter({
         data: {
           player1Points: input.player1Points,
           player2Points: input.player2Points,
+          ratings: {
+            connect: [({ id: rating1.id }), ({ id: rating2.id })]
+          }
         }
       })
     }),
@@ -177,6 +241,18 @@ export const tournamentRouter = createTRPCRouter({
       const numGames = (await ctx.prisma.game.findMany()).length
       const numPlayers = (await ctx.prisma.user.findMany()).length
       const players = await ctx.prisma.user.findMany()
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const ratings = await ctx.prisma.ratingHistory.findMany({
+        where: {
+          time: {
+            gt: oneWeekAgo
+          }
+        },
+        include: {
+          player: true
+        }
+      })
       const totalGames: { [key: string]: number } = {}
       players.forEach(player => {
         totalGames[player.id] = 0
@@ -204,14 +280,14 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
 
-
       return {
         numGames,
         numPlayers,
         mostGames: {
           player: `${mostPlayingPlayer?.firstName} ${mostPlayingPlayer?.lastName}`,
           value: sortedTotalGames ? sortedTotalGames[1] ? sortedTotalGames[1][1] : 0 : 0
-        }
+        },
+        biggestGainer: weeksBiggestGainer(players, ratings)
       }
     }),
   tournamentsStats: publicProcedure
@@ -276,5 +352,49 @@ export const tournamentRouter = createTRPCRouter({
           }
         }
       })
+    }),
+  deleteTournament: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return await ctx.prisma.tournament.delete({
+        where: {
+          id: input.id
+        }
+      })
+    }),
+  tournamentLeaders: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const games = await ctx.prisma.game.findMany({
+        where: {
+          tournamentId: input.id
+        },
+        include: {
+          players: true
+        }
+      })
+      if (!games) {
+        return
+      }
+      const playerScoresMap: { [key: string]: { name: string, score: number } } = {}
+      games.forEach(game => {
+        if (game.players.length == 2
+          && (game.player1Points != 0 || game.player2Points != 0)) {
+
+          let player = game.players[0]!
+          if (game.player1Points < game.player2Points) {
+            player = game.players[1]!
+          }
+          if (player.id in playerScoresMap) {
+            playerScoresMap[player.id]!.score += 1
+          } else {
+            playerScoresMap[player.id] = {
+              name: `${player.firstName} ${player.lastName}`,
+              score: 1
+            }
+          }
+        }
+      })
+      return getLeadersFromList(Object.values(playerScoresMap))
     })
-});
+})
