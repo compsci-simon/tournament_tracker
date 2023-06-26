@@ -1,16 +1,13 @@
-import { Box, Button, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Modal, Paper, Stack, TextField, Typography } from "@mui/material"
+import { Box, Button, Modal, Paper, Stack, TextField, Typography } from "@mui/material"
 
-import PeopleIcon from '@mui/icons-material/People';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { useState } from "react";
 import { DataGrid, GridColDef, GridToolbarContainer } from '@mui/x-data-grid'
 import { api } from "~/utils/api";
 import AddTournament from "~/components/AddTournament";
-import HomeIcon from '@mui/icons-material/Home';
-import Link from "next/link";
 import Layout from "~/components/Layout";
+import TabPanel from "~/components/TabPanel";
 
-const columns: GridColDef[] = [
+const userColumns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 90 },
   {
     field: 'firstName',
@@ -60,6 +57,37 @@ const columns: GridColDef[] = [
   }
 ]
 
+const tournamentColumns: GridColDef[] = [
+  { field: 'id', headerName: 'ID', width: 90 },
+  {
+    field: 'name',
+    headerName: 'Name',
+    width: 150,
+    editable: true,
+  },
+  {
+    field: 'deleteUser',
+    headerName: 'Delete User',
+    width: 150,
+    renderCell(params) {
+      const utils = api.useContext()
+      const { mutate: deleteTournamentMutation } = api.tournament.deleteTournament.useMutation({
+        onSuccess() {
+          utils.tournament.getAll.invalidate()
+        }
+      })
+      return <Button
+        color="error"
+        onClick={() => {
+          deleteTournamentMutation({ id: params.row.id })
+        }}
+      >
+        Delete
+      </Button>
+    },
+  }
+]
+
 const style = {
   position: 'absolute' as 'absolute',
   top: '50%',
@@ -72,10 +100,11 @@ const style = {
   p: 4,
 };
 
-function CustomToolbar() {
+function CustomUserToolbar() {
   const [addModal, setAddModal] = useState(false)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
   const handleAddClose = () => { setAddModal(false) }
   const utils = api.useContext()
   const { mutate: addUserMutation } = api.user.addUser.useMutation({
@@ -107,10 +136,16 @@ function CustomToolbar() {
               value={lastName}
               onChange={e => setLastName(e.target.value)}
             />
+            <TextField
+              label='Email'
+              autoComplete="off"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            />
             <Button
               variant='outlined'
               onClick={() => {
-                addUserMutation({ firstName, lastName })
+                addUserMutation({ firstName, lastName, email })
                 handleAddClose()
               }}
             >
@@ -123,6 +158,7 @@ function CustomToolbar() {
         <Button onClick={() => {
           setFirstName('')
           setLastName('')
+          setEmail('')
           setAddModal(true)
         }}> Add user </Button>
       </GridToolbarContainer>
@@ -130,55 +166,82 @@ function CustomToolbar() {
   );
 }
 
+function CustomTournamentToolbar() {
+  const [addModal, setAddModal] = useState(false)
+  const handleAddClose = () => { setAddModal(false) }
+
+  return (
+    <>
+      <Modal
+        open={addModal}
+        onClose={handleAddClose}
+      >
+        <Box sx={{
+          position: 'absolute' as 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 800,
+          bgcolor: 'background.paper',
+          border: '2px solid #000',
+          boxShadow: 24,
+          p: 4,
+        }} >
+          <Stack spacing={2}>
+            <Typography id="modal-modal-title" variant="h4" component="h2">
+              New tournament
+            </Typography>
+            <AddTournament handleSubmit={handleAddClose} handleCancel={handleAddClose} />
+          </Stack>
+        </Box>
+      </Modal>
+      <GridToolbarContainer>
+        <Button onClick={() => {
+          setAddModal(true)
+        }}> New Tournament </Button>
+      </GridToolbarContainer>
+    </>
+  );
+}
+
 export default function Page() {
-  const [selectedItem, setSelectedItem] = useState<'users' | 'events'>('events')
   const { data: users } = api.user.getAll.useQuery()
+  const { data: tournaments } = api.tournament.getAll.useQuery()
+  const tabs = [
+    {
+      title: 'Users',
+      content: <Paper >
+        <DataGrid
+          rows={users ?? []}
+          columns={userColumns}
+          disableRowSelectionOnClick
+          slots={{
+            toolbar: CustomUserToolbar
+          }}
+          pageSizeOptions={[5]}
+          sx={{ border: 0 }}
+        />
+      </Paper>
+    },
+    {
+      title: 'Tournaments',
+      content: <Paper >
+        <DataGrid
+          rows={tournaments ?? []}
+          columns={tournamentColumns}
+          disableRowSelectionOnClick
+          slots={{
+            toolbar: CustomTournamentToolbar
+          }}
+          pageSizeOptions={[5]}
+          sx={{ border: 0 }}
+        />
+      </Paper>
+    }
+  ]
 
   return <Box padding={4}>
-    <Stack direction='column' spacing={3}>
-      <Stack direction='row' spacing={2} sx={{ height: '100%' }}>
-        <Paper sx={{ height: '100%' }}>
-          <List>
-            <ListItem
-              disablePadding
-              onClick={() => setSelectedItem('users')}
-            >
-              <ListItemButton selected={selectedItem == 'users'}>
-                <ListItemIcon>
-                  <PeopleIcon />
-                </ListItemIcon>
-                <ListItemText primary='Users' />
-              </ListItemButton>
-            </ListItem>
-            <ListItem
-              disablePadding
-              onClick={() => setSelectedItem('events')}
-            >
-              <ListItemButton selected={selectedItem == 'events'}>
-                <ListItemIcon>
-                  <EmojiEventsIcon />
-                </ListItemIcon>
-                <ListItemText primary='Events' />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Paper>
-        <Paper sx={{ width: '100%', padding: '40px' }}>
-          {
-            selectedItem === 'users' ?
-              <DataGrid
-                rows={users ?? []}
-                columns={columns}
-                disableRowSelectionOnClick
-                slots={{
-                  toolbar: CustomToolbar
-                }}
-              />
-              : <AddTournament />
-          }
-        </Paper>
-      </Stack>
-    </Stack>
+    <TabPanel tabs={tabs} />
   </Box>
 }
 
