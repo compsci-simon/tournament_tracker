@@ -2,6 +2,31 @@ import { Box, Grid, Paper, Stack, Typography } from "@mui/material";
 import { api } from "~/utils/api";
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import Layout from '../components/Layout'
+import LineChart from "~/components/LineChart";
+
+const options = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: {
+      display: false
+    },
+    y: {
+      display: false
+    },
+  },
+  plugins: {
+    legend: {
+      display: false,
+      position: 'top' as const
+    },
+    title: {
+      display: false,
+      text: '',
+      position: 'top' as const
+    },
+  }
+}
 
 export default function Page() {
   const { data: stats } = api.tournament.overviewStats.useQuery()
@@ -86,6 +111,42 @@ export default function Page() {
                     Top players
                   </Typography>
                 </Stack>
+                {stats?.playerRankingHistories.map((playerHistory, index) => {
+                  if (index > 4) {
+                    return null
+                  }
+                  const data = {
+                    labels: playerHistory.history.map(x => ''),
+                    datasets: [
+                      {
+                        label: '',
+                        data: playerHistory.history,
+                        borderColor: '',
+                        backgroundColor: '',
+                        tension: 0.4,
+                        pointRadius: 0.1
+                      }
+                    ]
+                  }
+                  return <Stack
+                    key={`${index}`}
+                    direction='row'
+                    spacing={1}
+                    alignItems='center'
+                    justifyContent='space-between'
+                  >
+                    <Typography
+                      fontSize={20}
+                    >
+                      #{index + 1} {playerHistory.name} - {playerHistory.current}
+                    </Typography>
+                    <Paper>
+                      <Box height={70} width={200}>
+                        <LineChart options={options} data={data} />
+                      </Box>
+                    </Paper>
+                  </Stack>
+                })}
               </Stack>
             </Box>
           </Paper>
