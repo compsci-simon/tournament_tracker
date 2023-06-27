@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { Button, Stack } from '@mui/material';
 import { useRouter } from 'next/router';
 
-const pages = ['Tournaments', 'Players'];
+const pages = ['Tournaments', 'Players', 'Quick-Game'];
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
