@@ -2,15 +2,43 @@ import { Prisma } from "@prisma/client"
 import { GetResult } from "@prisma/client/runtime"
 import { TRPCError } from "@trpc/server"
 
+
+type PlayerType = {
+  id: string;
+  createdAt: Date;
+  firstName: string;
+  lastName: string;
+}
+
+type RatingType = {
+  id: string;
+  time: Date;
+  rating: number;
+  userId: string;
+  gameId: string;
+  player: {
+    id: string;
+    createdAt: Date;
+    firstName: string;
+    lastName: string;
+  }
+}
+
 type GameType = {
+  player1Points: number
+  player2Points: number
+  players: PlayerType[]
+}
+
+type GameScheduleType = {
   round: number
   player1?: string
   player2?: string
 }
 
-export const calculateGameSchedule: (players: string[]) => GameType[] = (players) => {
+export const calculateGameSchedule: (players: string[]) => GameScheduleType[] = (players) => {
   players = shuffleArray(players)
-  const gameSchedule: GameType[] = []
+  const gameSchedule: GameScheduleType[] = []
   const n = players.length
   const evenNumberOfPlayers = (n % 2) == 0
   const x = evenNumberOfPlayers ? 1 : 2
@@ -38,10 +66,14 @@ export const calculateGameSchedule: (players: string[]) => GameType[] = (players
   return gameSchedule
 }
 
-function shuffleArray(array: any[]) {
+function shuffleArray(array: string[]) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+    if (array[i] && array[j]) {
+      const temp = array[i]
+      array[i] == array[j]
+      array[j] == temp
+    }
   }
   return array;
 }
@@ -61,7 +93,6 @@ export const getLeadersFromList: (players: { name: string, score: number }[]) =>
     }
   }
   let index = 0
-  console.log(playerScores)
   playerScores.forEach(player => {
     if (index < 2) {
       if (player.score < score!) {
@@ -77,23 +108,23 @@ export const getLeadersFromList: (players: { name: string, score: number }[]) =>
       }
     }
   })
-  let firstPos: string = ''
-  let secondPos: string = ''
-  let thirdPos: string = ''
+  let firstPos = ''
+  let secondPos = ''
+  let thirdPos = ''
   if (first.length == 1) {
     firstPos = first[0]!
-  } else {
-    firstPos = 'Tied first place: ' + first.join(', ')
+  } else if (first.length > 1) {
+    firstPos = 'Tied: ' + first.join(', ')
   }
   if (second.length == 1) {
-    secondPos = first[0]!
-  } else {
-    secondPos = 'Tied first place: ' + first.join(', ')
+    secondPos = second[0]!
+  } else if (second.length > 1) {
+    secondPos = 'Tied: ' + second.join(', ')
   }
   if (third.length == 1) {
-    thirdPos = first[0]!
-  } else {
-    thirdPos = 'Tied first place: ' + first.join(', ')
+    thirdPos = third[0]!
+  } else if (third.length > 1) {
+    thirdPos = 'Tied: ' + third.join(', ')
   }
   return {
     first: firstPos,
@@ -101,26 +132,7 @@ export const getLeadersFromList: (players: { name: string, score: number }[]) =>
     third: thirdPos,
   }
 }
-type PlayerType = {
-  id: string;
-  createdAt: Date;
-  firstName: string;
-  lastName: string;
-}
 
-type RatingType = {
-  id: string;
-  time: Date;
-  rating: number;
-  userId: string;
-  gameId: string;
-  player: {
-    id: string;
-    createdAt: Date;
-    firstName: string;
-    lastName: string;
-  }
-}
 
 export const weeksBiggestGainer = (players: PlayerType[], ratings: RatingType[]) => {
 
@@ -140,10 +152,54 @@ export const weeksBiggestGainer = (players: PlayerType[], ratings: RatingType[])
       name: `${player.firstName} ${player.lastName}`
     })
   })
-  console.log(playerIncreases)
   const biggestGainer = playerIncreases.sort((a, b) => b.increase - a.increase)[0]
   return biggestGainer ?? {
     name: '',
     increase: 0
   }
+}
+
+export const numPlayedGames = (games: GameType[]) => {
+  return games.filter(g => { return g.player1Points > 0 || g.player2Points > 0 }).length
+}
+
+export const mostGamesUser = (players: PlayerType[], games: GameType[]) => {
+  const totalGames: { [key: string]: { name: string, totalGames: number } } = {}
+
+  players.forEach(player => {
+    totalGames[player.id] = {
+      name: `${player.firstName} ${player.lastName}`,
+      totalGames: 0
+    }
+  })
+  games.forEach(game => {
+    if (game.players.length == 2
+      && (game.player1Points > 0 || game.player2Points > 0)) {
+
+      game.players.forEach(player => {
+        totalGames[player.id]!.totalGames += 1
+      })
+    }
+  })
+
+  const totalGamesArray = Object.values(totalGames)
+  const sortedTotalGames = totalGamesArray.sort((a, b) => b.totalGames - a.totalGames)
+
+  return {
+    player: `${sortedTotalGames[0]?.name ?? ''}`,
+    value: sortedTotalGames[0]?.totalGames ?? 0
+  }
+}
+
+export const playerRankingHistories = (players: PlayerType[], rankings: RatingType[]) => {
+  const historiesMap: { [key: string]: { name: string, history: number[], current: number } } = {}
+  players.forEach(player => {
+    const playerHistory = rankings.filter(ranking => ranking.userId == player.id).sort((a, b) => a.time.getTime() - b.time.getTime())
+    historiesMap[player.id] = {
+      name: `${player.firstName} ${player.lastName}`,
+      history: playerHistory.map(h => h.rating),
+      current: playerHistory[playerHistory.length - 1]?.rating ?? 0
+    }
+  })
+  return Object.values(historiesMap).sort((a, b) => b.current - a.current)
 }
