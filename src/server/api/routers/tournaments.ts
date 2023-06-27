@@ -1,95 +1,8 @@
 import { TRPCError } from "@trpc/server"
 import { z } from "zod"
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc"
-import { calculateGameSchedule, getLeadersFromList, mostGamesUser, numPlayedGames, playerRankingHistories, weeksBiggestGainer } from "~/utils/tournament"
-
-const colors = [
-  {
-    borderColor: 'rgb(123, 45, 67)',
-    backgroundColor: 'rgba(123, 45, 67, 0.5)'
-  },
-  {
-    borderColor: 'rgb(89, 145, 200)',
-    backgroundColor: 'rgba(89, 145, 200, 0.5)'
-  },
-  {
-    borderColor: 'rgb(32, 178, 90)',
-    backgroundColor: 'rgba(32, 178, 90, 0.5)'
-  },
-  {
-    borderColor: 'rgb(210, 87, 153)',
-    backgroundColor: 'rgba(210, 87, 153, 0.5)'
-  },
-  {
-    borderColor: 'rgb(64, 192, 132)',
-    backgroundColor: 'rgba(64, 192, 132, 0.5)'
-  },
-  {
-    borderColor: 'rgb(180, 120, 20)',
-    backgroundColor: 'rgba(180, 120, 20, 0.5)'
-  },
-  {
-    borderColor: 'rgb(26, 102, 186)',
-    backgroundColor: 'rgba(26, 102, 186, 0.5)'
-  },
-  {
-    borderColor: 'rgb(142, 68, 173)',
-    backgroundColor: 'rgba(142, 68, 173, 0.5)'
-  },
-  {
-    borderColor: 'rgb(255, 128, 0)',
-    backgroundColor: 'rgba(255, 128, 0, 0.5)'
-  },
-  {
-    borderColor: 'rgb(221, 75, 57)',
-    backgroundColor: 'rgba(221, 75, 57, 0.5)'
-  },
-  {
-    borderColor: 'rgb(60, 180, 75)',
-    backgroundColor: 'rgba(60, 180, 75, 0.5)'
-  },
-  {
-    borderColor: 'rgb(70, 130, 180)',
-    backgroundColor: 'rgba(70, 130, 180, 0.5)'
-  },
-  {
-    borderColor: 'rgb(0, 0, 128)',
-    backgroundColor: 'rgba(0, 0, 128, 0.5)'
-  },
-  {
-    borderColor: 'rgb(255, 215, 0)',
-    backgroundColor: 'rgba(255, 215, 0, 0.5)'
-  },
-  {
-    borderColor: 'rgb(139, 69, 19)',
-    backgroundColor: 'rgba(139, 69, 19, 0.5)'
-  },
-  {
-    borderColor: 'rgb(218, 112, 214)',
-    backgroundColor: 'rgba(218, 112, 214, 0.5)'
-  },
-  {
-    borderColor: 'rgb(0, 128, 128)',
-    backgroundColor: 'rgba(0, 128, 128, 0.5)'
-  },
-  {
-    borderColor: 'rgb(184, 134, 11)',
-    backgroundColor: 'rgba(184, 134, 11, 0.5)'
-  },
-  {
-    borderColor: 'rgb(95, 158, 160)',
-    backgroundColor: 'rgba(95, 158, 160, 0.5)'
-  },
-  {
-    borderColor: 'rgb(128, 0, 0)',
-    backgroundColor: 'rgba(128, 0, 0, 0.5)'
-  }
-]
-const kFactor = 25
-
-function calculateExpectedOutcome(playerRatingA: number, playerRatingB: number) {
-  return 1 / (1 + Math.pow(10, (playerRatingB - playerRatingA) / 400))
-}
+import { calculateGameSchedule, calculateNewRatings, getLeadersFromList, mostGamesUser, numPlayedGames, playerRankingHistories, weeksBiggestGainer } from "~/utils/tournament"
+import { colors } from "~/utils/constants"
 
 const defaultBorderColor = 'rgb(255, 99, 132)'
 const defaultBackgroundColor = 'rgba(255, 99, 132, 0.5)'
@@ -202,13 +115,7 @@ export const tournamentRouter = createTRPCRouter({
           time: 'desc'
         }
       })
-      const expectedOutcome1 = calculateExpectedOutcome(player1Rating?.rating ?? 1200, player2Rating?.rating ?? 1200)
-      const expectedOutcome2 = 1 - expectedOutcome1
-      const outcome = input.player1Points > input.player2Points ? 1 : 0
-      const player1RatingChange = kFactor * (outcome - expectedOutcome1)
-      const player2RatingChange = kFactor * ((1 - outcome) - expectedOutcome2)
-      const player1NewRating = (player1Rating?.rating ?? 1200) + player1RatingChange
-      const player2NewRating = (player2Rating?.rating ?? 1200) + player2RatingChange
+      const { player1NewRating, player2NewRating } = calculateNewRatings(player1Rating?.rating, player2Rating?.rating, input.player1Points > input.player2Points)
       await ctx.prisma.ratingHistory.create({
         data: {
           rating: player1NewRating,
@@ -289,7 +196,7 @@ export const tournamentRouter = createTRPCRouter({
         const labels = ['', 'Round 0']
         let round = 0
         tournamentGames.forEach(game => {
-          if (game.round > round) {
+          if (game.round ?? 0 > round) {
             round++
             labels.push(`Round ${round}`)
           }
@@ -300,7 +207,7 @@ export const tournamentRouter = createTRPCRouter({
             .filter(game => {
               return game.players.map(player => player.id).includes(player.id)
             })
-            .sort((a, b) => a.round - b.round)
+            .sort((a, b) => (a.round ?? 0) - (b.round ?? 0))
           const wins: number[] = [0]
           let totalWins = 0
           playerTournamentGames.forEach(game => {
