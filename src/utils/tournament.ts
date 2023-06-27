@@ -1,7 +1,3 @@
-import { Prisma } from "@prisma/client"
-import { GetResult } from "@prisma/client/runtime"
-import { TRPCError } from "@trpc/server"
-
 
 type PlayerType = {
   id: string;
@@ -35,6 +31,8 @@ type GameScheduleType = {
   player1?: string
   player2?: string
 }
+
+const kFactor = 25
 
 export const calculateGameSchedule: (players: string[]) => GameScheduleType[] = (players) => {
   players = shuffleArray(players)
@@ -202,4 +200,23 @@ export const playerRankingHistories = (players: PlayerType[], rankings: RatingTy
     }
   })
   return Object.values(historiesMap).sort((a, b) => b.current - a.current)
+}
+
+function calculateExpectedOutcome(playerRatingA: number, playerRatingB: number) {
+  return 1 / (1 + Math.pow(10, (playerRatingB - playerRatingA) / 400))
+}
+
+export const calculateNewRatings = (player1Rating: number | undefined, player2Rating: number | undefined, player1Wins: boolean) => {
+
+  const expectedOutcome1 = calculateExpectedOutcome(player1Rating ?? 1200, player2Rating ?? 1200)
+  const expectedOutcome2 = 1 - expectedOutcome1
+  const outcome = player1Wins ? 1 : 0
+  const player1RatingChange = kFactor * (outcome - expectedOutcome1)
+  const player2RatingChange = kFactor * ((1 - outcome) - expectedOutcome2)
+  const player1NewRating = (player1Rating ?? 1200) + player1RatingChange
+  const player2NewRating = (player2Rating ?? 1200) + player2RatingChange
+  return {
+    player1NewRating,
+    player2NewRating
+  }
 }
