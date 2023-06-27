@@ -82,9 +82,11 @@ function ResponsiveAppBar() {
               }}
             >
               {pages.map((page) => (
-                <MenuItem key={page} onClick={handleCloseNavMenu}>
-                  <Typography textAlign="center">{page}</Typography>
-                </MenuItem>
+                <Link key={page} href={`/${page.toLowerCase()}`}>
+                  <MenuItem key={page} onClick={handleCloseNavMenu}>
+                    <Typography textAlign="center">{page}</Typography>
+                  </MenuItem>
+                </Link>
               ))}
             </Menu>
           </Box>
@@ -94,7 +96,7 @@ function ResponsiveAppBar() {
                 key={page}
                 onClick={() => {
                   handleCloseNavMenu()
-                  router.push(`/${page.toLowerCase()}`)
+                  void router.push(`/${page.toLowerCase()}`)
                 }}
                 sx={{ my: 2, color: 'white', display: 'block' }}
               >
@@ -111,7 +113,7 @@ function ResponsiveAppBar() {
 
         </Toolbar>
       </Container>
-    </AppBar>
+    </AppBar >
   );
 }
 export default ResponsiveAppBar;

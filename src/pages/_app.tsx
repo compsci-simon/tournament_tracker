@@ -3,7 +3,7 @@ import { api } from "~/utils/api";
 import "~/styles/globals.css";
 import { NextPage } from "next";
 
-export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
+export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: React.ReactElement) => React.ReactNode
 }
 

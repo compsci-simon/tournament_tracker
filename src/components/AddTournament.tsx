@@ -16,8 +16,8 @@ export default function AddTournament({ handleSubmit, handleCancel }: AddTournam
   const [tournamentName, setTournamentName] = useState('')
   const utils = api.useContext()
   const { mutate: createTournament } = api.tournament.createTournament.useMutation({
-    onSuccess() {
-      utils.tournament.getAll.invalidate()
+    async onSuccess() {
+      void await utils.tournament.getAll.invalidate()
       setLeft([...left, ...right])
       setRight([])
       setTournamentName('')

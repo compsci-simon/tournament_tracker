@@ -56,12 +56,12 @@ export default function BasicTabs({ tabs }: TabProps) {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={value} onChange={handleChange}>
           {tabs.map((tab, index) => {
-            return <Tab label={tab.title} {...a11yProps(index)} />
+            return <Tab key={`${index}`} label={tab.title} {...a11yProps(index)} />
           })}
         </Tabs>
       </Box>
       {tabs.map((tab, index) => {
-        return <TabPanel value={value} index={index}>
+        return <TabPanel key={`${index}`} value={value} index={index}>
           {tab.content}
         </TabPanel>
       })}

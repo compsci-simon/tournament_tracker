@@ -33,7 +33,7 @@ export default function Page() {
             <Box>
               <Button
                 variant='outlined'
-                onClick={() => router.push(`/tournaments/${tournament.id}`)}
+                onClick={() => { void router.push(`/tournaments/${tournament.id}`).then((r) => { r }).catch(e => console.log(e)) }}
               >
                 View
               </Button>

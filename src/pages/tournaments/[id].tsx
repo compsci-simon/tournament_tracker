@@ -12,7 +12,7 @@ type TournamentType = RouterOutputs['tournament']['getTournament']
 
 
 const style = {
-  position: 'absolute' as 'absolute',
+  position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
@@ -47,10 +47,11 @@ const renderTables = (
     {
       field: 'selectWinner',
       headerName: 'Set Results',
-      renderCell(params) {
+      renderCell(params: { row: { id: string } }) {
         return <Button
           onClick={() => {
-            setSelectedGame(params.row.id)
+            const newGameSelection = `${params?.row?.id ?? ''}`
+            setSelectedGame(newGameSelection)
             setModalState(true)
           }}
         >
@@ -66,9 +67,9 @@ const renderTables = (
     }
     let winner = 'To be played'
     if (game.player1Points > game.player2Points) {
-      winner = `${game.players[0]?.firstName} ${game.players[0]?.lastName}`
+      winner = `${game.players[0]?.firstName ?? ''} ${game.players[0]?.lastName ?? ''}`
     } else if (game.player1Points < game.player2Points) {
-      winner = `${game.players[1]?.firstName} ${game.players[1]?.lastName}`
+      winner = `${game.players[1]?.firstName ?? ''} ${game.players[1]?.lastName ?? ''}`
     } else if (game.player1Points == game.player2Points && game.player1Points > 0) {
       winner = 'Draw'
     }
@@ -116,14 +117,14 @@ export default function TournamentView() {
   const [leaderboard, setLeaderboard] = useState({ first: '', second: '', third: '' })
   const utils = api.useContext()
   const { mutate: updatePointsMutation } = api.tournament.setGamePoints.useMutation({
-    onSuccess() {
-      utils.tournament.getTournament.invalidate()
+    async onSuccess() {
+      await utils.tournament.getTournament.invalidate()
     }
   })
   const resetScores = () => {
     setPlayer1Points(0)
     setPlayer2Points(0)
-    updatePointsMutation({ gameId: selectedGame ?? '', player1Points, player2Points })
+    updatePointsMutation({ gameId: selectedGame ?? '', player1Points: 0, player2Points: 0 })
   }
   let tournamentId = query.id
   if (!tournamentId) {
@@ -152,14 +153,14 @@ export default function TournamentView() {
     >
       <Box sx={style}>
         <Stack spacing={2}>
-          <Typography>{`${selectedGameData?.players[0]?.firstName} ${selectedGameData?.players[0]?.lastName}`}</Typography>
+          <Typography>{`${selectedGameData?.players[0]?.firstName ?? ''} ${selectedGameData?.players[0]?.lastName ?? ''}`}</Typography>
           <TextField
             label='Points'
             type='number'
             value={player1Points}
             onChange={e => setPlayer1Points(parseInt(e.target.value))}
           />
-          <Typography>{`${selectedGameData?.players[1]?.firstName} ${selectedGameData?.players[1]?.lastName}`}</Typography>
+          <Typography>{`${selectedGameData?.players[1]?.firstName ?? ''} ${selectedGameData?.players[1]?.lastName ?? ''}`}</Typography>
           <TextField
             label='Points'
             type='number'

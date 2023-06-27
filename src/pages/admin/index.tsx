@@ -38,11 +38,11 @@ const userColumns: GridColDef[] = [
     field: 'deleteUser',
     headerName: 'Delete User',
     width: 150,
-    renderCell(params) {
+    renderCell(params: { row: { id: string } }) {
       const utils = api.useContext()
       const { mutate: deleteUserMutation } = api.user.deleteUser.useMutation({
-        onSuccess() {
-          utils.user.getAll.invalidate()
+        async onSuccess() {
+          void await utils.user.getAll.invalidate()
         }
       })
       return <Button
@@ -69,11 +69,11 @@ const tournamentColumns: GridColDef[] = [
     field: 'deleteUser',
     headerName: 'Delete User',
     width: 150,
-    renderCell(params) {
+    renderCell(params: { row: { id: string } }) {
       const utils = api.useContext()
       const { mutate: deleteTournamentMutation } = api.tournament.deleteTournament.useMutation({
-        onSuccess() {
-          utils.tournament.getAll.invalidate()
+        async onSuccess() {
+          void await utils.tournament.getAll.invalidate()
         }
       })
       return <Button
@@ -89,7 +89,7 @@ const tournamentColumns: GridColDef[] = [
 ]
 
 const style = {
-  position: 'absolute' as 'absolute',
+  position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
@@ -108,8 +108,8 @@ function CustomUserToolbar() {
   const handleAddClose = () => { setAddModal(false) }
   const utils = api.useContext()
   const { mutate: addUserMutation } = api.user.addUser.useMutation({
-    onSuccess() {
-      utils.user.getAll.invalidate()
+    async onSuccess() {
+      await utils.user.getAll.invalidate()
     }
   })
 
@@ -177,7 +177,7 @@ function CustomTournamentToolbar() {
         onClose={handleAddClose}
       >
         <Box sx={{
-          position: 'absolute' as 'absolute',
+          position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
