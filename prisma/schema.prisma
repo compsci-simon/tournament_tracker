@@ -35,9 +35,9 @@ model RatingHistory {
 model Game {
     id            String          @id @default(cuid())
     time          DateTime        @default(now())
-    round         Int
+    round         Int?
     Tournament    Tournament?     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-    tournamentId  String
+    tournamentId  String?
     players       User[]
     player1Points Int             @default(0)
     player2Points Int             @default(0)
