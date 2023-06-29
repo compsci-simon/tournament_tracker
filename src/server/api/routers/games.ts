@@ -7,7 +7,12 @@ export const gamesRouter = createTRPCRouter({
     return ctx.prisma.game.findMany();
   }),
   createQuickGame: publicProcedure
-    .input(z.object({ player1Id: z.string(), player2Id: z.string(), player1Score: z.number(), player2Score: z.number() }))
+    .input(z.object({
+      player1Id: z.string(),
+      player2Id: z.string(),
+      player1Score: z.number().gte(0),
+      player2Score: z.number().gte(0)
+    }))
     .mutation(async ({ ctx, input }) => {
       const { player1Id, player2Id, player1Score, player2Score } = input
       if (!(player1Id && player2Id)) {
@@ -15,7 +20,7 @@ export const gamesRouter = createTRPCRouter({
       }
       if (player1Score == 0 && player2Score == 0) {
       }
-      const player1Rating = await ctx.prisma.ratingHistory.findFirst({
+      const player1Rating = await ctx.prisma.rating.findFirst({
         where: {
           userId: player1Id
         },
@@ -23,7 +28,7 @@ export const gamesRouter = createTRPCRouter({
           time: 'desc'
         }
       })
-      const player2Rating = await ctx.prisma.ratingHistory.findFirst({
+      const player2Rating = await ctx.prisma.rating.findFirst({
         where: {
           userId: player2Id
         },
