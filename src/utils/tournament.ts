@@ -11,7 +11,7 @@ type RatingType = {
   time: Date;
   rating: number;
   userId: string;
-  gameId: string;
+  gameId: string | null;
   player: {
     id: string;
     createdAt: Date;
@@ -34,7 +34,7 @@ type GameScheduleType = {
 
 const kFactor = 25
 
-export const calculateGameSchedule: (players: string[]) => GameScheduleType[] = (players) => {
+export const calculateGameSchedule: (players: string[]) => { schedule: GameScheduleType[], numRounds: number } = (players) => {
   players = shuffleArray(players)
   const gameSchedule: GameScheduleType[] = []
   const n = players.length
@@ -61,7 +61,7 @@ export const calculateGameSchedule: (players: string[]) => GameScheduleType[] = 
       })
     }
   }
-  return gameSchedule
+  return { schedule: gameSchedule, numRounds: rounds }
 }
 
 function shuffleArray(array: string[]) {
