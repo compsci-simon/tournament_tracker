@@ -121,7 +121,7 @@ function CustomUserToolbar() {
       >
         <Box sx={style} >
           <Stack spacing={2}>
-            <Typography id="modal-modal-title" variant="h6" component="h2">
+            <Typography id="modal-modal-title" variant="h6">
               Add a user
             </Typography>
             <TextField
@@ -188,7 +188,7 @@ function CustomTournamentToolbar() {
           p: 4,
         }} >
           <Stack spacing={2}>
-            <Typography id="modal-modal-title" variant="h4" component="h2">
+            <Typography id="modal-modal-title" variant="h4">
               New tournament
             </Typography>
             <AddTournament handleSubmit={handleAddClose} handleCancel={handleAddClose} />
@@ -219,7 +219,7 @@ export default function Page() {
             toolbar: CustomUserToolbar
           }}
           pageSizeOptions={[5]}
-          sx={{ border: 0 }}
+          sx={{ border: 0, minHeight: 500 }}
         />
       </Paper>
     },
@@ -234,7 +234,7 @@ export default function Page() {
             toolbar: CustomTournamentToolbar
           }}
           pageSizeOptions={[5]}
-          sx={{ border: 0 }}
+          sx={{ border: 0, minHeight: 500 }}
         />
       </Paper>
     }
