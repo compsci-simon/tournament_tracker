@@ -13,7 +13,7 @@ export default function PageLayout({
         <meta name="description" content="Track your office tournament" />
         <link rel="icon" href="/logo.svg" />
       </Head>
-      <main >
+      <main>
         <NavBar />
         {children}
       </main>
