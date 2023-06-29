@@ -17,7 +17,7 @@ export const tournamentRouter = createTRPCRouter({
       })
     }),
   createTournament: publicProcedure
-    .input(z.object({ name: z.string(), playerIds: z.array(z.string()) }))
+    .input(z.object({ name: z.string(), playerIds: z.array(z.string()), startDate: z.date(), emailReminders: z.boolean(), roundInterval: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const t = await ctx.prisma.tournament.findFirst({
         where: {
@@ -27,13 +27,17 @@ export const tournamentRouter = createTRPCRouter({
       if (t) {
         return
       }
-      const schedule = calculateGameSchedule(input.playerIds)
+      const { schedule, numRounds } = calculateGameSchedule(input.playerIds)
       return await ctx.prisma.tournament.create({
         data: {
           name: input.name,
           players: {
             connect: input.playerIds.map(playerId => ({ id: playerId }))
           },
+          numRounds: numRounds,
+          startDate: input.startDate,
+          emailReminders: input.emailReminders,
+          roundInterval: input.roundInterval,
           games: {
             create: schedule.map(game => {
               const gamePlayers = [({ id: game.player1 })]
@@ -68,7 +72,11 @@ export const tournamentRouter = createTRPCRouter({
       })
     }),
   setGamePoints: publicProcedure
-    .input(z.object({ gameId: z.string(), player1Points: z.number(), player2Points: z.number() }))
+    .input(z.object({
+      gameId: z.string(),
+      player1Points: z.number().gte(0),
+      player2Points: z.number().gte(0)
+    }))
     .mutation(async ({ ctx, input }) => {
       const game = await ctx.prisma.game.findFirst({
         where: {
@@ -83,7 +91,7 @@ export const tournamentRouter = createTRPCRouter({
       if (!(player1 && player2)) {
         return
       }
-      await ctx.prisma.ratingHistory.deleteMany({
+      await ctx.prisma.rating.deleteMany({
         where: {
           gameId: input.gameId
         }
@@ -99,7 +107,7 @@ export const tournamentRouter = createTRPCRouter({
           }
         })
       }
-      const player1Rating = await ctx.prisma.ratingHistory.findFirst({
+      const player1Rating = await ctx.prisma.rating.findFirst({
         where: {
           userId: player1?.id ?? ''
         },
@@ -107,7 +115,7 @@ export const tournamentRouter = createTRPCRouter({
           time: 'desc'
         }
       })
-      const player2Rating = await ctx.prisma.ratingHistory.findFirst({
+      const player2Rating = await ctx.prisma.rating.findFirst({
         where: {
           userId: player2?.id ?? ''
         },
@@ -116,7 +124,7 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
       const { player1NewRating, player2NewRating } = calculateNewRatings(player1Rating?.rating, player2Rating?.rating, input.player1Points > input.player2Points)
-      await ctx.prisma.ratingHistory.create({
+      await ctx.prisma.rating.create({
         data: {
           rating: player1NewRating,
           player: {
@@ -127,7 +135,7 @@ export const tournamentRouter = createTRPCRouter({
           }
         }
       })
-      await ctx.prisma.ratingHistory.create({
+      await ctx.prisma.rating.create({
         data: {
           rating: player2NewRating,
           player: {
@@ -159,7 +167,7 @@ export const tournamentRouter = createTRPCRouter({
       const players = await ctx.prisma.user.findMany()
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      const ratings = await ctx.prisma.ratingHistory.findMany({
+      const ratings = await ctx.prisma.rating.findMany({
         where: {
           time: {
             gt: oneWeekAgo
@@ -193,14 +201,10 @@ export const tournamentRouter = createTRPCRouter({
       })
       return tournaments.map(tournament => {
         const tournamentGames = allGames.filter(game => game.tournamentId == tournament.id)
-        const labels = ['', 'Round 0']
-        let round = 0
-        tournamentGames.forEach(game => {
-          if (game.round ?? 0 > round) {
-            round++
-            labels.push(`Round ${round}`)
-          }
-        })
+        const labels = ['']
+        for (let i = 0; i < tournament.numRounds; i++) {
+          labels.push(`Round ${i}`)
+        }
 
         const datasets = tournament.players.map((player, index) => {
           const playerTournamentGames = tournamentGames
@@ -224,7 +228,6 @@ export const tournamentRouter = createTRPCRouter({
             }
             wins.push(totalWins)
           })
-
           return {
             label: `${player.firstName} ${player.lastName}`,
             data: wins,
