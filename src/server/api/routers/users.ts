@@ -21,7 +21,10 @@ export const userRouter = createTRPCRouter({
         data: {
           firstName: input.firstName,
           lastName: input.lastName,
-          email: input.email
+          email: input.email,
+          ratings: {
+            create: [({ rating: 1200 })]
+          }
         }
       })
     }),
