@@ -12,42 +12,46 @@ datasource db {
 }
 
 model User {
-    id          String          @id @default(cuid())
-    createdAt   DateTime        @default(now())
+    id          String       @id @default(cuid())
+    createdAt   DateTime     @default(now())
     firstName   String
     lastName    String
     email       String
     tournaments Tournament[]
     games       Game[]
-    ratings     RatingHistory[]
+    ratings     Rating[]
 }
 
-model RatingHistory {
+model Rating {
     id     String   @id @default(cuid())
     time   DateTime @default(now())
     rating Int
     player User     @relation(fields: [userId], references: [id], onDelete: Cascade)
     userId String
-    game   Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-    gameId String
+    game   Game?    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+    gameId String?
 }
 
 model Game {
-    id            String          @id @default(cuid())
-    time          DateTime        @default(now())
+    id            String      @id @default(cuid())
+    time          DateTime    @default(now())
     round         Int?
-    Tournament    Tournament?     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+    Tournament    Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
     tournamentId  String?
     players       User[]
-    player1Points Int             @default(0)
-    player2Points Int             @default(0)
-    ratings       RatingHistory[]
+    player1Points Int         @default(0)
+    player2Points Int         @default(0)
+    ratings       Rating[]
 }
 
 model Tournament {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    name      String
-    players   User[]
-    games     Game[]
+    id             String   @id @default(cuid())
+    createdAt      DateTime @default(now())
+    startDate      DateTime
+    roundInterval  String
+    emailReminders Boolean
+    numRounds      Int
+    name           String
+    players        User[]
+    games          Game[]
 }
