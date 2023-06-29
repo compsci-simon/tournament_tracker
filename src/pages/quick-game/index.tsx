@@ -56,7 +56,11 @@ export default function Page() {
                   label='score'
                   type='number'
                   value={player1Score}
-                  onChange={e => setPlayer1Score(parseInt(e.target.value))}
+                  onChange={e => {
+                    if (parseInt(e.target.value) >= 0) {
+                      setPlayer1Score(parseInt(e.target.value))
+                    }
+                  }}
                 />
               </Stack>
               <Box padding={2}>
@@ -86,7 +90,11 @@ export default function Page() {
                   label='score'
                   type='number'
                   value={player2Score}
-                  onChange={e => setPlayer2Score(parseInt(e.target.value))}
+                  onChange={e => {
+                    if (parseInt(e.target.value) >= 0) {
+                      setPlayer2Score(parseInt(e.target.value))
+                    }
+                  }}
                 />
               </Stack>
             </Stack>
