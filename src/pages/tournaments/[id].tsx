@@ -62,7 +62,7 @@ const renderTables = (
   ];
   let rounds = 0
   const games = tournament!.games.map(game => {
-    if (game.round > rounds) {
+    if ((game.round ?? 0) > rounds) {
       rounds++;
     }
     let winner = 'To be played'
@@ -114,7 +114,6 @@ export default function TournamentView() {
   const [selectedGame, setSelectedGame] = useState<string | undefined>()
   const [player1Points, setPlayer1Points] = useState(0)
   const [player2Points, setPlayer2Points] = useState(0)
-  const [leaderboard, setLeaderboard] = useState({ first: '', second: '', third: '' })
   const utils = api.useContext()
   const { mutate: updatePointsMutation } = api.tournament.setGamePoints.useMutation({
     async onSuccess() {
@@ -158,14 +157,22 @@ export default function TournamentView() {
             label='Points'
             type='number'
             value={player1Points}
-            onChange={e => setPlayer1Points(parseInt(e.target.value))}
+            onChange={e => {
+              if (parseInt(e.target.value) >= 0) {
+                setPlayer1Points(parseInt(e.target.value))
+              }
+            }}
           />
           <Typography>{`${selectedGameData?.players[1]?.firstName ?? ''} ${selectedGameData?.players[1]?.lastName ?? ''}`}</Typography>
           <TextField
             label='Points'
             type='number'
             value={player2Points}
-            onChange={e => setPlayer2Points(parseInt(e.target.value))}
+            onChange={e => {
+              if (parseInt(e.target.value) >= 0) {
+                setPlayer2Points(parseInt(e.target.value))
+              }
+            }}
           />
           <Stack direction='row' spacing={2}>
             <Button
