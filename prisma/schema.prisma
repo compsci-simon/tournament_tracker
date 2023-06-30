@@ -13,11 +13,12 @@ datasource db {
 
 model User {
     id          String       @id @default(cuid())
+    email       String       @unique
     createdAt   DateTime     @default(now())
     firstName   String
     lastName    String
-    password    String       @default("hexagon")
-    email       String
+    password    String       @default("866091acb5ff40f25f6d72b9ed3152c7dfb7fb605d5f39b4dec2a2e9f3e99202")
+    nickName    String?
     tournaments Tournament[]
     games       Game[]
     ratings     Rating[]
