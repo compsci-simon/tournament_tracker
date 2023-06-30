@@ -12,12 +12,15 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Link from 'next/link';
 import { Button, Stack } from '@mui/material';
 import { useRouter } from 'next/router';
+import ThemeSwitch from './ThemeSwitch';
+import { ThemeContext } from '~/pages/_app';
 
 const pages = ['Tournaments', 'Players', 'Quick-Game'];
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const router = useRouter()
+  const { dark, setDark } = React.useContext(ThemeContext)
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget);
@@ -105,11 +108,13 @@ function ResponsiveAppBar() {
             ))}
           </Box>
 
-          <Box sx={{ paddingLeft: '10px' }}>
+          <Box sx={{ paddingLeft: '10px', mr: '20px' }}>
             <Link href='/admin'>
               <AdminPanelSettingsIcon fontSize='large' />
             </Link>
           </Box>
+
+          <ThemeSwitch defaultChecked value={dark} onChange={() => setDark(!dark)} />
 
         </Toolbar>
       </Container>
