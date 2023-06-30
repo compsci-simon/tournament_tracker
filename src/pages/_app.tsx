@@ -4,6 +4,7 @@ import "~/styles/globals.css";
 import { NextPage } from "next";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { Dispatch, SetStateAction, createContext, useState } from "react";
+import { SessionProvider } from 'next-auth/react'
 
 const theme = createTheme({
   palette: {
@@ -20,6 +21,7 @@ const theme = createTheme({
     },
     text: {
       primary: '#EFEFEF', // Text color
+      secondary: '#FFFFFF'
     },
     divider: 'rgba(255, 255, 255, 0.12)'
   },
@@ -49,19 +51,24 @@ type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout
 }
 
-export const ThemeContext = createContext<{ dark: boolean, setDark: Dispatch<SetStateAction<boolean>> | (() => void) }>({ dark: false, setDark: () => { } });
+export const ThemeContext = createContext<{ dark: boolean, setDark: Dispatch<SetStateAction<boolean>> | (() => void) }>({ dark: false, setDark() { return; } });
 
-const MyApp: AppType = ({ Component, pageProps }: AppPropsWithLayout) => {
+const MyApp: AppType = ({
+  Component,
+  pageProps: { session, ...pageProps }
+}: AppPropsWithLayout) => {
   const getLayout = Component.getLayout ?? ((page) => page)
   const [dark, setDark] = useState(true)
-  console.log('dark', dark)
+
   return <ThemeContext.Provider value={{ dark, setDark }}>
-    {
-      <ThemeProvider theme={dark ? theme : {}}>
-        <CssBaseline />
-        {getLayout(<Component {...pageProps} />)}
-      </ThemeProvider>
-    }
+    <SessionProvider session={session}>
+      {
+        <ThemeProvider theme={dark ? theme : {}}>
+          <CssBaseline />
+          {getLayout(<Component {...pageProps} />)}
+        </ThemeProvider>
+      }
+    </SessionProvider>
   </ThemeContext.Provider>
 };
 
