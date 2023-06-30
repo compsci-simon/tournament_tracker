@@ -1,11 +1,16 @@
 import Head from 'next/head'
 import NavBar from './NavBar'
+import { useSession } from 'next-auth/react'
 
 export default function PageLayout({
   children
 }: {
   children: React.ReactNode
 }) {
+  useSession({
+    required: true
+  })
+
   return (
     <>
       <Head>
