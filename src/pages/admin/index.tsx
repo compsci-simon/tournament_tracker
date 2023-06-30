@@ -46,6 +46,7 @@ const userColumns: GridColDef[] = [
         }
       })
       return <Button
+        disabled
         color="error"
         onClick={() => {
           deleteUserMutation({ id: params.row.id })
@@ -77,6 +78,7 @@ const tournamentColumns: GridColDef[] = [
         }
       })
       return <Button
+        disabled
         color="error"
         onClick={() => {
           deleteTournamentMutation({ id: params.row.id })
