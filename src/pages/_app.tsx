@@ -4,7 +4,7 @@ import "~/styles/globals.css";
 import { NextPage } from "next";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { Dispatch, SetStateAction, createContext, useState } from "react";
-import { SessionProvider } from 'next-auth/react'
+import { SessionProvider, useSession } from 'next-auth/react'
 
 const theme = createTheme({
   palette: {
@@ -45,6 +45,7 @@ const theme = createTheme({
 
 export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: React.ReactElement) => React.ReactNode
+  auth?: boolean
 }
 
 type AppPropsWithLayout = AppProps & {
@@ -62,14 +63,30 @@ const MyApp: AppType = ({
 
   return <ThemeContext.Provider value={{ dark, setDark }}>
     <SessionProvider session={session}>
-      {
-        <ThemeProvider theme={dark ? theme : {}}>
-          <CssBaseline />
-          {getLayout(<Component {...pageProps} />)}
-        </ThemeProvider>
-      }
+      <ThemeProvider theme={dark ? theme : {}}>
+        <CssBaseline />
+        {Component.auth ?
+          <Auth>
+            {getLayout(<Component {...pageProps} />)}
+          </Auth>
+          : getLayout(<Component {...pageProps} />)}
+      </ThemeProvider>
     </SessionProvider>
   </ThemeContext.Provider>
 };
+
+interface AuthProps {
+  children: React.ReactNode;
+}
+
+function Auth({ children, ...rest }: AuthProps) {
+  const { status } = useSession({ required: true })
+
+  if (status === "loading") {
+    return <div>Loading...</div>
+  }
+
+  return children
+}
 
 export default api.withTRPC(MyApp);
