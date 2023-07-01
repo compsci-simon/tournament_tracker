@@ -7,10 +7,6 @@ export default function PageLayout({
 }: {
   children: React.ReactNode
 }) {
-  useSession({
-    required: true
-  })
-
   return (
     <>
       <Head>
