@@ -42,6 +42,7 @@ type ChartPropTypes = {
       data: number[];
       borderColor: string | undefined;
       backgroundColor: string | undefined;
+      tension?: number
     }[];
   }
 }
