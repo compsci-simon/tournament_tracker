@@ -46,15 +46,14 @@ function EditUserModal(props: EditUserModalProps) {
     onSuccess() {
       setOpen(false)
       updateSession({
-        image: avatar
+        image: avatar,
       })
     }
   })
   const { mutate: changePasswordMutation } = api.user.changePassword.useMutation()
-  const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
   const changeAvatar = async () => {
-    const newAvatar = await generateAvatar('')
+    const newAvatar = await generateAvatar('', '')
     setAvatar(newAvatar)
   }
 
