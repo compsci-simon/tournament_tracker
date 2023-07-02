@@ -1,4 +1,4 @@
-import { Box, Button, Grid, Paper, Stack, TextField, Typography } from "@mui/material"
+import { Box, Button, FormControl, FormControlLabel, FormLabel, Grid, Paper, Radio, RadioGroup, Stack, TextField, Typography } from "@mui/material"
 import Link from "next/link"
 import { useRouter } from "next/router"
 import { useState } from "react"
@@ -11,6 +11,7 @@ function SignUpPage() {
   const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [gender, setGender] = useState('female')
   const router = useRouter()
   const { mutate: createUserMutation } = api.user.createUser.useMutation({
     onSuccess() {
@@ -29,7 +30,8 @@ function SignUpPage() {
       lastName,
       nickName: nickname,
       email,
-      password: SHA256(password).toString()
+      password: SHA256(password).toString(),
+      gender
     })
   }
 
@@ -85,6 +87,20 @@ function SignUpPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl>
+                <FormLabel>Gender</FormLabel>
+                <RadioGroup
+                  aria-labelledby="demo-controlled-radio-buttons-group"
+                  name="controlled-radio-buttons-group"
+                  value={gender}
+                  onChange={e => setGender(e.target.value)}
+                >
+                  <FormControlLabel value="female" control={<Radio />} label="Female" />
+                  <FormControlLabel value="male" control={<Radio />} label="Male" />
+                </RadioGroup>
+              </FormControl>
             </Grid>
             <Grid item xs={12}>
               <Button variant='outlined' onClick={handleSignUp}>
