@@ -5,6 +5,8 @@ import { NextPage } from "next";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { Dispatch, SetStateAction, createContext, useState } from "react";
 import { SessionProvider, useSession } from 'next-auth/react'
+import { useRouter } from "next/router";
+import SnackbarProvider from 'react-simple-snackbar'
 
 const theme = createTheme({
   palette: {
@@ -45,7 +47,7 @@ const theme = createTheme({
 
 export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: React.ReactElement) => React.ReactNode
-  auth?: boolean
+  auth?: { role: string } | boolean
 }
 
 type AppPropsWithLayout = AppProps & {
@@ -63,14 +65,21 @@ const MyApp: AppType = ({
 
   return <ThemeContext.Provider value={{ dark, setDark }}>
     <SessionProvider session={session}>
-      <ThemeProvider theme={dark ? theme : {}}>
-        <CssBaseline />
-        {Component.auth ?
-          <Auth>
-            {getLayout(<Component {...pageProps} />)}
-          </Auth>
-          : getLayout(<Component {...pageProps} />)}
-      </ThemeProvider>
+      <SnackbarProvider>
+        <ThemeProvider theme={dark ? theme : {}}>
+          <CssBaseline />
+          {Component.auth ?
+            Component.auth !== true && Component.auth.role ?
+              <AuthAdmin>
+                {getLayout(<Component {...pageProps} />)}
+              </AuthAdmin>
+              :
+              <Auth>
+                {getLayout(<Component {...pageProps} />)}
+              </Auth>
+            : getLayout(<Component {...pageProps} />)}
+        </ThemeProvider>
+      </SnackbarProvider>
     </SessionProvider>
   </ThemeContext.Provider>
 };
@@ -84,6 +93,21 @@ function Auth({ children, ...rest }: AuthProps) {
 
   if (status === "loading") {
     return <div>Loading...</div>
+  }
+
+  return children
+}
+
+function AuthAdmin({ children, ...rest }: AuthProps) {
+  const { data: session, status } = useSession({ required: true })
+  const router = useRouter()
+
+  if (status === "loading") {
+    return <div>Loading...</div>
+  }
+
+  if (session.user.role != 'admin') {
+    router.push('/')
   }
 
   return children
