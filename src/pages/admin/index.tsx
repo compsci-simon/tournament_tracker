@@ -18,21 +18,7 @@ const userColumns: GridColDef[] = [
   {
     field: 'lastName',
     headerName: 'Last name',
-    width: 150,
     editable: true,
-  },
-  {
-    field: 'rating',
-    headerName: 'Rating',
-    type: 'number',
-    width: 110,
-    editable: true,
-  },
-  {
-    field: 'totalGames',
-    headerName: 'Total Games',
-    type: 'number',
-    width: 160,
   },
   {
     field: 'deleteUser',
@@ -90,83 +76,6 @@ const tournamentColumns: GridColDef[] = [
   }
 ]
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 400,
-  bgcolor: 'background.paper',
-  border: '2px solid #000',
-  boxShadow: 24,
-  p: 4,
-};
-
-function CustomUserToolbar() {
-  const [addModal, setAddModal] = useState(false)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
-  const handleAddClose = () => { setAddModal(false) }
-  const utils = api.useContext()
-  const { mutate: addUserMutation } = api.user.addUser.useMutation({
-    async onSuccess() {
-      await utils.user.getAll.invalidate()
-    }
-  })
-
-  return (
-    <>
-      <Modal
-        open={addModal}
-        onClose={handleAddClose}
-      >
-        <Box sx={style} >
-          <Stack spacing={2}>
-            <Typography id="modal-modal-title" variant="h6">
-              Add a user
-            </Typography>
-            <TextField
-              label='First Name'
-              value={firstName}
-              autoComplete="off"
-              onChange={e => setFirstName(e.target.value)}
-            />
-            <TextField
-              label='Last Name'
-              autoComplete="off"
-              value={lastName}
-              onChange={e => setLastName(e.target.value)}
-            />
-            <TextField
-              label='Email'
-              autoComplete="off"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            <Button
-              variant='outlined'
-              onClick={() => {
-                addUserMutation({ firstName, lastName, email })
-                handleAddClose()
-              }}
-            >
-              Submit
-            </Button>
-          </Stack>
-        </Box>
-      </Modal>
-      <GridToolbarContainer>
-        <Button onClick={() => {
-          setFirstName('')
-          setLastName('')
-          setEmail('')
-          setAddModal(true)
-        }}> Add user </Button>
-      </GridToolbarContainer>
-    </>
-  );
-}
 
 function CustomTournamentToolbar() {
   const [addModal, setAddModal] = useState(false)
@@ -217,9 +126,6 @@ export default function Page() {
           rows={users ?? []}
           columns={userColumns}
           disableRowSelectionOnClick
-          slots={{
-            toolbar: CustomUserToolbar
-          }}
           pageSizeOptions={[5]}
           sx={{ border: 0, minHeight: 500 }}
         />
@@ -251,4 +157,8 @@ Page.getLayout = function getLayout(page: React.ReactElement) {
   return <Layout>
     {page}
   </Layout>
+}
+
+Page.auth = {
+  role: 'admin'
 }
