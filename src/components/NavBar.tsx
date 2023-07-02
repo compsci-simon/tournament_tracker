@@ -16,16 +16,21 @@ import ThemeSwitch from './ThemeSwitch';
 import { ThemeContext } from '~/pages/_app';
 import { useSession } from 'next-auth/react';
 
-const pages = ['Tournaments', 'Players', 'Quick-Game'];
+const pages = ['Tournaments', 'Players', 'Games', 'Quick-Game'];
 const settings = ['Profile', 'Logout'];
 
 function ResponsiveAppBar() {
+  const [isAdmin, setIsAdmin] = React.useState(false)
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
   const router = useRouter()
   const { dark, setDark } = React.useContext(ThemeContext)
   const { data: session } = useSession()
-  console.log('session', session)
+  React.useEffect(() => {
+    if (session?.user.role == 'admin') {
+      setIsAdmin(true)
+    }
+  }, [session])
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget);
@@ -120,15 +125,17 @@ function ResponsiveAppBar() {
             ))}
           </Box>
 
-          <Box sx={{ paddingLeft: '10px', mr: '20px' }}>
-            <Link href='/admin'>
-              <AdminPanelSettingsIcon fontSize='large' />
-            </Link>
-          </Box>
-
           <ThemeSwitch defaultChecked value={dark} onChange={() => setDark(!dark)} />
+          {isAdmin ?
+            <Box sx={{ paddingLeft: '10px', mr: '20px' }}>
+              <Link href='/admin'>
+                <AdminPanelSettingsIcon fontSize='large' />
+              </Link>
+            </Box>
+            : null
+          }
 
-          <Box sx={{ flexGrow: 0, ml: '15px' }}>
+          <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar alt="Remy Sharp" src={session?.user?.image ?? ''} />
