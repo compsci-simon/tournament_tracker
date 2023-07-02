@@ -28,7 +28,7 @@ const options = {
   }
 }
 
-export default function Page() {
+export default function HomePage() {
   const { data: stats } = api.tournament.overviewStats.useQuery()
 
   return (
@@ -94,7 +94,7 @@ export default function Page() {
                   </Typography>
                 </Stack>
                 <Typography variant='overline'>
-                  {stats?.biggestGainer?.name} - {stats?.biggestGainer?.increase}
+                  {stats?.biggestGainer?.name} - {stats?.biggestGainer?.increase.toFixed(3)}
                 </Typography>
               </Stack>
             </Box>
@@ -135,13 +135,14 @@ export default function Page() {
                     alignItems='center'
                     justifyContent='space-between'
                   >
+                    <img src={playerHistory.avatar} style={{ width: '60px' }} />
                     <Typography
                       fontSize={20}
                     >
-                      #{index + 1} {playerHistory.name} - {playerHistory.current}
+                      #{index + 1} {playerHistory.name} - {playerHistory.current.toFixed(3)}
                     </Typography>
-                    <Paper>
-                      <Box height={70} width={200}>
+                    <Paper elevation={0} variant='outlined'>
+                      <Box height={70} width={200} padding={1}>
                         <LineChart options={options} data={data} />
                       </Box>
                     </Paper>
@@ -157,8 +158,10 @@ export default function Page() {
   );
 }
 
-Page.getLayout = function getLayout(page: React.ReactElement) {
+HomePage.getLayout = function getLayout(page: React.ReactElement) {
   return <Layout>
     {page}
   </Layout>
 }
+
+HomePage.auth = true
