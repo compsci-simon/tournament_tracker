@@ -1,16 +1,6 @@
-import { TRPCError } from "@trpc/server";
 import NextAuth from "next-auth/next";
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { api } from "~/utils/api";
 import { prisma } from "~/server/db";
-import z from 'zod'
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1).max(12)
-})
-
-type ILogin = z.infer<typeof loginSchema>
 
 export default NextAuth({
   session: {
@@ -24,7 +14,6 @@ export default NextAuth({
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials, req) {
-        // const creds = await loginSchema.parseAsync(credentials)
         const user = await prisma.user.findFirst({
           where: {
             email: credentials?.email ?? '',
@@ -38,11 +27,34 @@ export default NextAuth({
           id: user.id,
           name: user.nickName ?? `${user.firstName} ${user.lastName}`,
           email: user.email,
-          image: user.avatar
+          image: user.avatar,
+          role: user.role
         }
       },
     })
   ],
+  callbacks: {
+    jwt({ token, user, trigger, session }) {
+      if (user) {
+        token.id = user.id
+        token.role = user.role
+      }
+
+      if (trigger === 'update') {
+        token.image = session.image
+        token.picture = session.image
+      }
+      return token
+    },
+    async session({ session, token, user }) {
+      session.user.role = token.role === 'admin' ? 'admin' : 'non-admin'
+      return session
+    },
+  },
+  secret: 'test',
+  jwt: {
+    secret: 'test'
+  },
   pages: {
     signIn: '/auth/signin'
   }
