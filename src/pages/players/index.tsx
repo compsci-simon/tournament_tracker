@@ -1,35 +1,53 @@
 import { Box, List, ListItem, ListItemButton, Paper, Stack, TextField, Typography } from "@mui/material"
-import { useState } from "react"
+import { useContext, useState } from "react"
 import Layout from "~/components/Layout"
 import { api } from "~/utils/api"
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import LineChart from "~/components/LineChart";
 import { colors } from "~/utils/constants";
+import { ThemeContext } from "../_app";
 
-const options = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: {
-      display: false
-    },
-  },
-  plugins: {
-    legend: {
-      position: 'top' as const,
-    },
-    title: {
-      display: true,
-      text: 'Elo history',
-    },
-  },
-}
 
 const playerInfo = (playerId: string, name: string) => {
   const { data: user } = api.ratings.playerGames.useQuery({
     playerId
   })
+  const { dark } = useContext(ThemeContext)
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        display: false,
+        border: {
+          color: dark ? '#EFEFEF' : '#080808'
+        }
+      },
+      y: {
+        ticks: {
+          color: dark ? '#EFEFEF' : '#080808'
+        },
+        grid: {
+          color: dark ? '#EFEFEF' : '#080808'
+        },
+        border: {
+          color: dark ? '#EFEFEF' : '#080808'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: 'Elo history',
+        color: dark ? '#EFEFEF' : '#080808'
+      },
+    },
+  }
 
   return <Stack height='100%'>
     <Stack spacing={2}>
@@ -37,12 +55,12 @@ const playerInfo = (playerId: string, name: string) => {
 
       <Stack spacing={10} direction='row'>
         <Stack spacing={10}>
-          <Stack spacing={2}>
-            <AccountCircleIcon sx={{ width: 200, height: 200, color: '#808080' }} />
+          <Stack spacing={2} alignItems='center'>
+            <img src={user?.avatar} style={{ width: 200, height: 200 }} />
             <Box>
               <Stack spacing={1} alignItems='center' direction='row'>
-                <LocalFireDepartmentIcon sx={{ width: 30, height: 30, color: '#FFA500' }} />
-                <Typography fontSize={24}>{user?.currentScore}</Typography>
+                {/* <LocalFireDepartmentIcon sx={{ width: 30, height: 30, color: '#FFA500' }} /> */}
+                <Typography fontSize={24}>Rating: {user?.currentScore.toFixed(3)}</Typography>
               </Stack>
             </Box>
           </Stack>
@@ -75,13 +93,14 @@ const playerInfo = (playerId: string, name: string) => {
             data: user?.ratings?.map(rating => rating.rating) ?? [],
             borderColor: colors[1]?.borderColor,
             backgroundColor: colors[1]?.backgroundColor,
-            // tension: 0.4,
+            tension: 0.3,
           }],
         }}
       />
     </Box>
   </Stack>
 }
+
 export default function Page() {
   const { data: users } = api.user.getAll.useQuery()
   const [selectedUser, setSelectedUser] = useState<{ id: string, firstName: string, lastName: string } | undefined>()
