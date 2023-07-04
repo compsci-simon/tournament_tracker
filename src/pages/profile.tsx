@@ -5,6 +5,7 @@ import Layout from "~/components/Layout"
 import { api } from "~/utils/api"
 import { SHA256 } from 'crypto-js';
 import { generateAvatar } from "~/utils/users";
+import { enqueueSnackbar } from "notistack";
 
 const style = {
   position: 'absolute' as 'absolute',
@@ -48,9 +49,20 @@ function EditUserModal(props: EditUserModalProps) {
       updateSession({
         image: avatar,
       })
+      enqueueSnackbar('Updated profile', { variant: 'success' })
+    },
+    onError() {
+      enqueueSnackbar('Failed to update user', { variant: 'error' })
     }
   })
-  const { mutate: changePasswordMutation } = api.user.changePassword.useMutation()
+  const { mutate: changePasswordMutation } = api.user.changePassword.useMutation({
+    onSuccess() {
+      enqueueSnackbar('Changed password', { variant: 'success' })
+    },
+    onError() {
+      enqueueSnackbar('Failed to change password', { variant: 'error' })
+    }
+  })
   const handleClose = () => setOpen(false);
   const changeAvatar = async () => {
     const newAvatar = await generateAvatar('', '')
@@ -122,7 +134,11 @@ function EditUserModal(props: EditUserModalProps) {
           <Grid item xs={6}>
             <Button
               onClick={() => {
-                changePasswordMutation({ id: user.id, newPassword: SHA256(password).toString() })
+                if (password.length > 0) {
+                  changePasswordMutation({ id: user.id, newPassword: SHA256(password).toString() })
+                } else {
+                  enqueueSnackbar('Password may not be empty', { variant: 'error' })
+                }
               }}
               variant='outlined'
             >
