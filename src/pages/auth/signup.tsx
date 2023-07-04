@@ -4,6 +4,7 @@ import { useRouter } from "next/router"
 import { useState } from "react"
 import { api } from "~/utils/api"
 import { SHA256 } from 'crypto-js';
+import { enqueueSnackbar } from 'notistack'
 
 function SignUpPage() {
   const [firstName, setFirstName] = useState('')
@@ -20,8 +21,12 @@ function SignUpPage() {
       setNickname('')
       setEmail('')
       setPassword('')
+      enqueueSnackbar('Successfully created user', { variant: 'success' })
       router.push('/auth/signin')
-    }
+    },
+    onError(error, variables, context) {
+      enqueueSnackbar('Failed to create user', { variant: 'error' })
+    },
   })
 
   const handleSignUp = () => {
