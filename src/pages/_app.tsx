@@ -6,7 +6,7 @@ import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { Dispatch, SetStateAction, createContext, useState } from "react";
 import { SessionProvider, useSession } from 'next-auth/react'
 import { useRouter } from "next/router";
-import SnackbarProvider from 'react-simple-snackbar'
+import { SnackbarProvider } from 'notistack';
 
 const theme = createTheme({
   palette: {
