@@ -5,13 +5,23 @@ export const ratingsRouter = createTRPCRouter({
   playerGames: publicProcedure
     .input(z.object({ playerId: z.string() }))
     .query(async ({ ctx, input }) => {
+      const emptyGames = {
+        totalGames: 0,
+        ratings: [],
+        streak: 0,
+        currentScore: 0,
+        avatar: ''
+      }
       if (input.playerId == '') {
-        return {
-          totalGames: 0,
-          ratings: [],
-          streak: 0,
-          currentScore: 0
+        return emptyGames
+      }
+      const user = await ctx.prisma.user.findFirst({
+        where: {
+          id: input.playerId
         }
+      })
+      if (!user) {
+        return emptyGames
       }
       const ratings = await ctx.prisma.rating.findMany({
         where: {
@@ -39,10 +49,11 @@ export const ratingsRouter = createTRPCRouter({
       }
 
       return {
-        totalGames: ratings.length,
+        totalGames: ratings.length - 1,
         ratings: ratings.map(game => ({ rating: game.rating, date: game.time })),
         streak,
-        currentScore: ratings[ratings.length - 1]?.rating ?? 0
+        currentScore: ratings[ratings.length - 1]?.rating ?? 0,
+        avatar: user.avatar
       }
     })
 })
