@@ -1,8 +1,9 @@
 import { Box, Button, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material"
-import { useState } from "react"
+import { useSession } from "next-auth/react"
+import { useEffect, useState } from "react"
 import Layout from "~/components/Layout"
 import { api } from "~/utils/api"
-
+import { enqueueSnackbar } from "notistack"
 
 export default function Page() {
   const [player1, setPlayer1] = useState('')
@@ -10,20 +11,29 @@ export default function Page() {
   const [player1Score, setPlayer1Score] = useState(0)
   const [player2Score, setPlayer2Score] = useState(0)
   const { data: users } = api.user.getAll.useQuery()
-  const { mutate: createGameMutation } = api.games.createQuickGame.useMutation()
+  const { mutate: createGameMutation } = api.games.createQuickGame.useMutation({
+    onSuccess() {
+      enqueueSnackbar('Successfully created quick game', { variant: 'success' })
+    },
+    onError() {
+      enqueueSnackbar('Failed to create quick game', { variant: 'error' })
+    }
+  })
+  const { data: session } = useSession()
+  useEffect(() => {
+    setPlayer1(session?.user.email ?? '')
+  }, [session])
 
   const createGame = () => {
     if (!player1 || !player2 || (!player1Score && !player2Score)) {
       return
     }
-
     createGameMutation({
-      player1Id: player1,
-      player2Id: player2,
+      player1Email: player1,
+      player2Email: player2,
       player1Score,
       player2Score,
     })
-    setPlayer1('')
     setPlayer2('')
     setPlayer1Score(0)
     setPlayer2Score(0)
@@ -42,15 +52,11 @@ export default function Page() {
                   onChange={e => setPlayer1(e.target.value)}
                   label="Player 1"
                   fullWidth
+                  disabled
                 >
-                  <MenuItem value={''}>
-                    <em>None</em>
+                  <MenuItem value={player1}>
+                    <em>{users?.filter(u => u.email == player1)[0]?.firstName} (You)</em>
                   </MenuItem>
-                  {users?.filter(user => user.id != player2).map(player => {
-                    return <MenuItem key={player.id} value={player.id}>
-                      {player.firstName} {player.lastName}
-                    </MenuItem>
-                  })}
                 </Select>
                 <TextField
                   label='score'
@@ -80,8 +86,8 @@ export default function Page() {
                   <MenuItem value={''}>
                     <em>None</em>
                   </MenuItem>
-                  {users?.filter(user => user.id != player1).map(player => {
-                    return <MenuItem key={player.id} value={player.id}>
+                  {users?.filter(user => user.email != player1).map(player => {
+                    return <MenuItem key={player.id} value={player.email}>
                       {player.firstName} {player.lastName}
                     </MenuItem>
                   })}
