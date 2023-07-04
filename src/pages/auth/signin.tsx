@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { SHA256 } from 'crypto-js';
 import { useRouter } from "next/router";
+import { enqueueSnackbar } from "notistack";
 
 function SignInPage() {
   const [email, setEmail] = useState('')
@@ -16,7 +17,10 @@ function SignInPage() {
       redirect: false
     })
     if (res?.status == 200) {
+      enqueueSnackbar('Successfully signed in', { variant: 'success' })
       router.push('/')
+    } else {
+      enqueueSnackbar('Failed to sign in', { variant: 'error' })
     }
   }
 
