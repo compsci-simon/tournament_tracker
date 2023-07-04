@@ -2,7 +2,7 @@ import NextAuth from "next-auth/next";
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from "~/server/db";
 
-export default NextAuth({
+const x = NextAuth({
   session: {
     strategy: 'jwt'
   },
@@ -59,3 +59,7 @@ export default NextAuth({
     signIn: '/auth/signin'
   }
 })
+
+export const authOptions = x.authOptions
+
+export default x
