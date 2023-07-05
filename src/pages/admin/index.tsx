@@ -52,28 +52,6 @@ const tournamentColumns: GridColDef[] = [
     width: 150,
     editable: true,
   },
-  {
-    field: 'deleteUser',
-    headerName: 'Delete User',
-    width: 150,
-    renderCell(params: { row: { id: string } }) {
-      const utils = api.useContext()
-      const { mutate: deleteTournamentMutation } = api.tournament.deleteTournament.useMutation({
-        async onSuccess() {
-          void await utils.tournament.getAll.invalidate()
-        }
-      })
-      return <Button
-        disabled
-        color="error"
-        onClick={() => {
-          deleteTournamentMutation({ id: params.row.id })
-        }}
-      >
-        Delete
-      </Button>
-    },
-  }
 ]
 
 
@@ -92,7 +70,7 @@ function CustomTournamentToolbar() {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 800,
+          width: 500,
           bgcolor: 'background.paper',
           border: '2px solid #000',
           boxShadow: 24,
