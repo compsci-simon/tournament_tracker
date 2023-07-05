@@ -1,14 +1,14 @@
 import { TRPCError } from "@trpc/server"
 import { z } from "zod"
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc"
-import { calculateGameSchedule, calculateNewRatings, getLeadersFromList, mostGamesUser, numPlayedGames, playerRankingHistories, weeksBiggestGainer } from "~/utils/tournament"
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
+import { calculateNewRatings, getLeadersFromList, mostGamesUser, numPlayedGames, playerRankingHistories, weeksBiggestGainer } from "~/utils/tournament"
 import { colors } from "~/utils/constants"
 
 const defaultBorderColor = 'rgb(255, 99, 132)'
 const defaultBackgroundColor = 'rgba(255, 99, 132, 0.5)'
 
 export const tournamentRouter = createTRPCRouter({
-  getAll: publicProcedure
+  getAll: protectedProcedure
     .query(async ({ ctx }) => {
       return await ctx.prisma.tournament.findMany({
         include: {
@@ -16,46 +16,25 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
     }),
-  createTournament: publicProcedure
-    .input(z.object({ name: z.string(), playerIds: z.array(z.string()), startDate: z.date(), emailReminders: z.boolean(), roundInterval: z.string() }))
+  createTournament: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      startDate: z.date(),
+      emailReminders: z.boolean(),
+      roundInterval: z.string().min(1)
+    }))
     .mutation(async ({ ctx, input }) => {
-      const t = await ctx.prisma.tournament.findFirst({
-        where: {
-          name: input.name
-        }
-      })
-      if (t) {
-        return
-      }
-      const { schedule, numRounds } = calculateGameSchedule(input.playerIds)
       return await ctx.prisma.tournament.create({
         data: {
           name: input.name,
-          players: {
-            connect: input.playerIds.map(playerId => ({ id: playerId }))
-          },
-          numRounds: numRounds,
+          numRounds: 0,
           startDate: input.startDate,
           emailReminders: input.emailReminders,
           roundInterval: input.roundInterval,
-          games: {
-            create: schedule.map(game => {
-              const gamePlayers = [({ id: game.player1 })]
-              if (game.player2) {
-                gamePlayers.push(({ id: game.player2 }))
-              }
-              return {
-                round: game.round,
-                players: {
-                  connect: gamePlayers
-                },
-              }
-            })
-          }
         }
       })
     }),
-  getTournament: publicProcedure
+  getTournament: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       return await ctx.prisma.tournament.findFirst({
@@ -71,7 +50,67 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
     }),
-  setGamePoints: publicProcedure
+  joinTournament: protectedProcedure
+    .input(z.object({
+      tournamentId: z.string().min(1)
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userEmail = ctx.session.user.email
+      const player = await ctx.prisma.user.findFirst({
+        where: {
+          email: userEmail ?? ''
+        }
+      })
+      if (!player) {
+        return new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to find the user associated to your session"
+        })
+      }
+      return await ctx.prisma.tournament.update({
+        where: {
+          id: input.tournamentId
+        },
+        data: {
+          players: {
+            connect: [({ id: player.id })]
+          }
+        },
+        include: {
+          players: true
+        }
+      })
+    }),
+  leaveTournament: protectedProcedure
+    .input(z.object({ tournamentId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const userEmail = ctx.session.user.email
+      const player = await ctx.prisma.user.findFirst({
+        where: {
+          email: userEmail ?? ''
+        }
+      })
+      if (!player) {
+        return new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to find the user associated to your session"
+        })
+      }
+      return await ctx.prisma.tournament.update({
+        where: {
+          id: input.tournamentId
+        },
+        data: {
+          players: {
+            disconnect: [({ id: player.id })]
+          }
+        },
+        include: {
+          players: true
+        }
+      })
+    }),
+  setGamePoints: protectedProcedure
     .input(z.object({
       gameId: z.string(),
       player1Points: z.number().gte(0),
@@ -123,10 +162,11 @@ export const tournamentRouter = createTRPCRouter({
           time: 'desc'
         }
       })
-      const { player1NewRating, player2NewRating } = calculateNewRatings(player1Rating?.rating, player2Rating?.rating, input.player1Points > input.player2Points)
+      const { player1NewRating, player2NewRating, player1RatingChange, player2RatingChange } = calculateNewRatings(player1Rating!.rating, player2Rating!.rating, input.player1Points > input.player2Points)
       await ctx.prisma.rating.create({
         data: {
           rating: player1NewRating,
+          ratingChange: player1RatingChange,
           player: {
             connect: ({ id: player1.id })
           },
@@ -138,6 +178,7 @@ export const tournamentRouter = createTRPCRouter({
       await ctx.prisma.rating.create({
         data: {
           rating: player2NewRating,
+          ratingChange: player2RatingChange,
           player: {
             connect: ({ id: player2.id })
           },
@@ -156,7 +197,7 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
     }),
-  overviewStats: publicProcedure
+  overviewStats: protectedProcedure
     .query(async ({ ctx }) => {
       const games = await ctx.prisma.game.findMany({
         include: {
@@ -178,7 +219,6 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
 
-
       return {
         numGames: numPlayedGames(games),
         numPlayers,
@@ -187,7 +227,7 @@ export const tournamentRouter = createTRPCRouter({
         playerRankingHistories: playerRankingHistories(players, ratings)
       }
     }),
-  tournamentsStats: publicProcedure
+  tournamentsStats: protectedProcedure
     .query(async ({ ctx }) => {
       const tournaments = await ctx.prisma.tournament.findMany({
         include: {
@@ -245,21 +285,7 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
     }),
-  deleteTournament: publicProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await ctx.prisma.game.deleteMany({
-        where: {
-          tournamentId: input.id
-        }
-      })
-      return await ctx.prisma.tournament.delete({
-        where: {
-          id: input.id
-        }
-      })
-    }),
-  tournamentLeaders: publicProcedure
+  tournamentLeaders: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const games = await ctx.prisma.game.findMany({
