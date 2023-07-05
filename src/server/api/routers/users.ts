@@ -13,7 +13,8 @@ export const userRouter = createTRPCRouter({
       lastName: z.string().min(3),
       email: z.string().min(3),
       password: z.string().min(4),
-      nickName: z.string().nullable()
+      nickName: z.string().nullable(),
+      gender: z.string().min(1)
     }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findFirst({
@@ -27,7 +28,8 @@ export const userRouter = createTRPCRouter({
           code: 'CONFLICT'
         })
       }
-      const avatar = await generateAvatar(input.nickName ?? `${input.firstName} ${input.lastName}`)
+      const avatar = await generateAvatar(input.nickName ?? `${input.firstName} ${input.lastName}`, input.gender)
+      const isAdmin = (await ctx.prisma.user.findMany()).length == 0
       return await ctx.prisma.user.create({
         data: {
           firstName: input.firstName,
@@ -36,8 +38,10 @@ export const userRouter = createTRPCRouter({
           password: input.password,
           nickName: input.nickName,
           avatar,
+          gender: input.gender,
+          role: isAdmin ? 'admin' : 'player',
           ratings: {
-            create: [({ rating: 1200 })]
+            create: [({ rating: 1200, ratingChange: 0 })]
           }
         }
       })
