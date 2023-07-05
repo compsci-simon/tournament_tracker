@@ -1,8 +1,11 @@
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import NextAuth from "next-auth/next";
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from "~/server/db";
+import { NextAuthOptions } from "next-auth";
 
-const x = NextAuth({
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   session: {
     strategy: 'jwt'
   },
@@ -58,8 +61,6 @@ const x = NextAuth({
   pages: {
     signIn: '/auth/signin'
   }
-})
+}
 
-export const authOptions = x.authOptions
-
-export default x
+export default NextAuth(authOptions)
