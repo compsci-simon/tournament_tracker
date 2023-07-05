@@ -1,13 +1,10 @@
 import { GetServerSidePropsContext } from "next"
-import { getServerSession } from "next-auth"
+import { Session, getServerSession } from "next-auth"
 import { authOptions } from "../pages/api/auth/[...nextauth]"
 
-export const getServerAuthSession: (ctx: {
-  req: GetServerSidePropsContext['req'],
-  res: GetServerSidePropsContext['res']
-}) => void = (ctx: {
+export const getServerAuthSession = async (ctx: {
   req: GetServerSidePropsContext['req'],
   res: GetServerSidePropsContext['res']
 }) => {
-    return getServerSession(ctx.req, ctx.res, authOptions)
-  }
+  return await getServerSession<any, Session>(ctx.req, ctx.res, authOptions)
+}
