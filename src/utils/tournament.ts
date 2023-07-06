@@ -4,6 +4,7 @@ type PlayerType = {
   createdAt: Date;
   firstName: string;
   lastName: string;
+  avatar: string;
 }
 
 type RatingType = {
@@ -190,13 +191,14 @@ export const mostGamesUser = (players: PlayerType[], games: GameType[]) => {
 }
 
 export const playerRankingHistories = (players: PlayerType[], rankings: RatingType[]) => {
-  const historiesMap: { [key: string]: { name: string, history: number[], current: number } } = {}
+  const historiesMap: { [key: string]: { name: string, history: number[], current: number, avatar: string } } = {}
   players.forEach(player => {
     const playerHistory = rankings.filter(ranking => ranking.userId == player.id).sort((a, b) => a.time.getTime() - b.time.getTime())
     historiesMap[player.id] = {
       name: `${player.firstName} ${player.lastName}`,
       history: playerHistory.map(h => h.rating),
-      current: playerHistory[playerHistory.length - 1]?.rating ?? 0
+      current: playerHistory[playerHistory.length - 1]?.rating ?? 0,
+      avatar: player.avatar
     }
   })
   return Object.values(historiesMap).sort((a, b) => b.current - a.current)
@@ -206,17 +208,22 @@ function calculateExpectedOutcome(playerRatingA: number, playerRatingB: number) 
   return 1 / (1 + Math.pow(10, (playerRatingB - playerRatingA) / 400))
 }
 
-export const calculateNewRatings = (player1Rating: number | undefined, player2Rating: number | undefined, player1Wins: boolean) => {
+export const calculateNewRatings = (player1Rating: number, player2Rating: number, player1Wins: boolean) => {
 
-  const expectedOutcome1 = calculateExpectedOutcome(player1Rating ?? 1200, player2Rating ?? 1200)
+  const expectedOutcome1 = calculateExpectedOutcome(player1Rating, player2Rating)
   const expectedOutcome2 = 1 - expectedOutcome1
   const outcome = player1Wins ? 1 : 0
   const player1RatingChange = kFactor * (outcome - expectedOutcome1)
   const player2RatingChange = kFactor * ((1 - outcome) - expectedOutcome2)
-  const player1NewRating = (player1Rating ?? 1200) + player1RatingChange
-  const player2NewRating = (player2Rating ?? 1200) + player2RatingChange
+  if (player1RatingChange * -1 != player2RatingChange) {
+    console.log('here')
+  }
+  const player1NewRating = (player1Rating) + player1RatingChange
+  const player2NewRating = (player2Rating) + player2RatingChange
   return {
     player1NewRating,
-    player2NewRating
+    player2NewRating,
+    player1RatingChange,
+    player2RatingChange,
   }
 }
