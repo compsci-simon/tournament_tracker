@@ -35,7 +35,7 @@ type GameScheduleType = {
 
 const kFactor = 25
 
-export const calculateGameSchedule: (players: string[]) => { schedule: GameScheduleType[], numRounds: number } = (players) => {
+export const roundRobinScheduleGames: (players: string[]) => { schedule: GameScheduleType[], numRounds: number } = (players) => {
   players = shuffleArray(players)
   const gameSchedule: GameScheduleType[] = []
   const n = players.length
