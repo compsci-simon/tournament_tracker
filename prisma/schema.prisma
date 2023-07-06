@@ -101,8 +101,8 @@ model Game {
 }
 
 model Tournament {
-    id             String   @id @default(cuid())
-    createdAt      DateTime @default(now())
+    id             String         @id @default(cuid())
+    createdAt      DateTime       @default(now())
     startDate      DateTime
     roundInterval  String
     emailReminders Boolean
@@ -110,9 +110,11 @@ model Tournament {
     name           String
     players        User[]
     games          Game[]
+    TournamentJob  TournamentJob?
 }
 
-model ScheduledTournamentCreations {
-    id           String @id @default(cuid())
-    tournamentId String
+model TournamentJob {
+    id           String     @id @default(cuid())
+    tournament   Tournament @relation(fields: [tournamentId], references: [id])
+    tournamentId String     @unique
 }
