@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"build": "next build",
-		"dev": "next dev",
+		"dev": "nodemon",
 		"postinstall": "prisma generate",
 		"lint": "next lint",
 		"start": "next start"
@@ -29,6 +29,7 @@
 		"dayjs": "^1.11.8",
 		"next": "^13.4.2",
 		"next-auth": "^4.22.1",
+		"nodemon": "^2.0.22",
 		"notistack": "^3.0.1",
 		"random-avatar-generator": "^2.0.0",
 		"react": "18.2.0",
