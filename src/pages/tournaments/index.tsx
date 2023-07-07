@@ -5,20 +5,10 @@ import { api } from '~/utils/api'
 import { useRouter } from 'next/router'
 import { enqueueSnackbar } from 'notistack'
 import { useSession } from 'next-auth/react'
+import { useContext } from 'react'
+import { ThemeContext } from '../_app'
+import { options } from '~/utils/constants'
 
-const options = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'top' as const,
-    },
-    title: {
-      display: true,
-      text: 'Player scores',
-    },
-  },
-}
 
 export default function TournamentsPage() {
   const utils = api.useContext()
@@ -44,6 +34,7 @@ export default function TournamentsPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const currentDate = new Date()
+  const { dark } = useContext(ThemeContext)
 
   return <Box padding={4}>
     {tournaments?.map(tournament => {
@@ -84,6 +75,32 @@ export default function TournamentsPage() {
         </>
       }
 
+      const startingSoonInfo = () => {
+        if (started) return null
+        return <>
+          <Typography variant='h5'>
+            Starting: {tournament.startDate.toDateString()}
+          </Typography>
+          <Box display='inline-block' padding={2}>
+            <Paper elevation={0} sx={{ display: 'inline-block' }}>
+              <Box padding={2}>
+                <table>
+                  <tr>
+                    <th colSpan={2}>Signed up players</th>
+                  </tr>
+                  {tournament.players.map(player => {
+                    if (player.email == session.user.email) {
+                      return <tr><td colSpan={2}><em>You</em></td></tr>
+                    }
+                    return <tr><td>{player.firstName}</td><td>{player.lastName}</td></tr>
+                  })}
+                </table>
+              </Box>
+            </Paper>
+          </Box>
+        </>
+      }
+
       return <Paper key={tournament.id}>
         <Box padding={2}>
           <Stack spacing={1}>
@@ -91,11 +108,7 @@ export default function TournamentsPage() {
               {tournament.name}
             </Typography>
             {
-              !started ?
-                <Typography variant='h5'>
-                  Starting: {tournament.startDate.toDateString()}
-                </Typography>
-                : null
+              startingSoonInfo()
             }
             {
               started ?
@@ -103,7 +116,7 @@ export default function TournamentsPage() {
                   <Box height={300}>
                     {
                       tournament.chartData ?
-                        <LineChart options={options} data={tournament.chartData} />
+                        <LineChart options={options(dark)} data={tournament.chartData} />
                         : null
                     }
                   </Box>
