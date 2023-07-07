@@ -1,12 +1,11 @@
 import { Box, List, ListItem, ListItemButton, Paper, Stack, TextField, Typography } from "@mui/material"
-import { useContext, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import Layout from "~/components/Layout"
 import { api } from "~/utils/api"
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import LineChart from "~/components/LineChart";
-import { colors } from "~/utils/constants";
+import { colors, options } from "~/utils/constants";
 import { ThemeContext } from "../_app";
+import { useSession } from "next-auth/react";
 
 
 const playerInfo = (playerId: string, name: string) => {
@@ -14,40 +13,6 @@ const playerInfo = (playerId: string, name: string) => {
     playerId
   })
   const { dark } = useContext(ThemeContext)
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: {
-        display: false,
-        border: {
-          color: dark ? '#EFEFEF' : '#080808'
-        }
-      },
-      y: {
-        ticks: {
-          color: dark ? '#EFEFEF' : '#080808'
-        },
-        grid: {
-          color: dark ? '#EFEFEF' : '#080808'
-        },
-        border: {
-          color: dark ? '#EFEFEF' : '#080808'
-        }
-      }
-    },
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'Elo history',
-        color: dark ? '#EFEFEF' : '#080808'
-      },
-    },
-  }
 
   return <Stack height='100%'>
     <Stack spacing={2}>
@@ -85,7 +50,7 @@ const playerInfo = (playerId: string, name: string) => {
     <hr />
     <Box flexGrow={2} width='100%'>
       <LineChart
-        options={options}
+        options={options(dark)}
         data={{
           labels: user?.ratings?.map(rating => rating.date.toUTCString()) ?? [],
           datasets: [{
@@ -104,6 +69,12 @@ const playerInfo = (playerId: string, name: string) => {
 export default function Page() {
   const { data: users } = api.user.getAll.useQuery()
   const [selectedUser, setSelectedUser] = useState<{ id: string, firstName: string, lastName: string } | undefined>()
+  const { data: session } = useSession()
+
+  useEffect(() => {
+    const user = users.filter(u => u.email === session.user.email)[0]
+    setSelectedUser(user)
+  }, [session])
 
   return <Box height='100%' padding={2}>
     <Stack className="h-100" direction='row' spacing={2}>
