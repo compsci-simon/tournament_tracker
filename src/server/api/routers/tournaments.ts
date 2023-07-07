@@ -46,7 +46,9 @@ export const tournamentRouter = createTRPCRouter({
             include: {
               players: true
             }
-          }
+          },
+          startDate: true,
+          roundInterval: true,
         }
       })
     }),
@@ -194,6 +196,7 @@ export const tournamentRouter = createTRPCRouter({
         data: {
           player1Points: input.player1Points,
           player2Points: input.player2Points,
+          time: new Date()
         }
       })
     }),
