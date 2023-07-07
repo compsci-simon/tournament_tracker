@@ -8,7 +8,7 @@ import { generateAvatar } from "~/utils/users";
 import { enqueueSnackbar } from "notistack";
 
 const style = {
-  position: 'absolute' as 'absolute',
+  position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
@@ -46,7 +46,7 @@ function EditUserModal(props: EditUserModalProps) {
   const { mutate: updateUserMutation } = api.user.updateUserProfile.useMutation({
     onSuccess() {
       setOpen(false)
-      updateSession({
+      void updateSession({
         image: avatar,
       })
       enqueueSnackbar('Updated profile', { variant: 'success' })
@@ -64,8 +64,8 @@ function EditUserModal(props: EditUserModalProps) {
     }
   })
   const handleClose = () => setOpen(false);
-  const changeAvatar = async () => {
-    const newAvatar = await generateAvatar('', '')
+  const changeAvatar = () => {
+    const newAvatar = generateAvatar('', '')
     setAvatar(newAvatar)
   }
 

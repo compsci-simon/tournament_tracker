@@ -15,7 +15,7 @@ export default function TournamentsPage() {
   const { data: tournaments } = api.tournament.tournamentsStats.useQuery()
   const { mutate: joinTournamentMutation } = api.tournament.joinTournament.useMutation({
     onSuccess() {
-      utils.tournament.tournamentsStats.invalidate()
+      void utils.tournament.tournamentsStats.invalidate()
       enqueueSnackbar('Joined tournament', { variant: 'success' })
     },
     onError() {
@@ -24,7 +24,7 @@ export default function TournamentsPage() {
   })
   const { mutate: leaveTournamentMutation } = api.tournament.leaveTournament.useMutation({
     onSuccess() {
-      utils.tournament.tournamentsStats.invalidate()
+      void utils.tournament.tournamentsStats.invalidate()
       enqueueSnackbar('Left tournament', { variant: 'success' })
     },
     onError() {
@@ -90,9 +90,9 @@ export default function TournamentsPage() {
                   </tr>
                   {tournament.players.map(player => {
                     if (player.email == session.user.email) {
-                      return <tr><td colSpan={2}><em>You</em></td></tr>
+                      return <tr key={player.email}><td colSpan={2}><em>You</em></td></tr>
                     }
-                    return <tr><td>{player.firstName}</td><td>{player.lastName}</td></tr>
+                    return <tr key={player.email}><td>{player.firstName}</td><td>{player.lastName}</td></tr>
                   })}
                 </table>
               </Box>

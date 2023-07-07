@@ -18,7 +18,7 @@ function SignInPage() {
     })
     if (res?.status == 200) {
       enqueueSnackbar('Successfully signed in', { variant: 'success' })
-      router.push('/')
+      void router.push('/')
     } else {
       enqueueSnackbar('Failed to sign in', { variant: 'error' })
     }
@@ -42,7 +42,7 @@ function SignInPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
-            <Button variant='outlined' onClick={handleLogin}>
+            <Button variant='outlined' onClick={() => void handleLogin()}>
               Sign in
             </Button>
             <Link href='/auth/signup'>

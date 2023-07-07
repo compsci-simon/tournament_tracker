@@ -49,6 +49,7 @@ export const tournamentRouter = createTRPCRouter({
           },
           startDate: true,
           roundInterval: true,
+          numRounds: true
         }
       })
     }),
@@ -164,7 +165,7 @@ export const tournamentRouter = createTRPCRouter({
           time: 'desc'
         }
       })
-      const { player1NewRating, player2NewRating, player1RatingChange, player2RatingChange } = calculateNewRatings(player1Rating!.rating, player2Rating!.rating, input.player1Points > input.player2Points)
+      const { player1NewRating, player2NewRating, player1RatingChange, player2RatingChange } = calculateNewRatings(player1Rating.rating, player2Rating.rating, input.player1Points > input.player2Points)
       await ctx.prisma.rating.create({
         data: {
           rating: player1NewRating,

@@ -46,8 +46,8 @@ export const gamesRouter = createTRPCRouter({
           email: player2Email
         }
       })
-      const player1Id: string = player1!.id
-      const player2Id: string = player2!.id
+      const player1Id: string = player1.id
+      const player2Id: string = player2.id
       const player1Rating = await ctx.prisma.rating.findFirst({
         where: {
           userId: player1Id

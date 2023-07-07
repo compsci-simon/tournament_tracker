@@ -7,6 +7,7 @@ import { Dispatch, SetStateAction, createContext, useState } from "react";
 import { SessionProvider, useSession } from 'next-auth/react'
 import { useRouter } from "next/router";
 import { SnackbarProvider } from 'notistack';
+import { Session } from "next-auth";
 
 const theme = createTheme({
   palette: {
@@ -64,7 +65,7 @@ const MyApp: AppType = ({
   const [dark, setDark] = useState(true)
 
   return <ThemeContext.Provider value={{ dark, setDark }}>
-    <SessionProvider session={session}>
+    <SessionProvider session={session as Session}>
       <SnackbarProvider>
         <ThemeProvider theme={dark ? theme : {}}>
           <CssBaseline />
@@ -107,7 +108,7 @@ function AuthAdmin({ children, ...rest }: AuthProps) {
   }
 
   if (session.user.role != 'admin') {
-    router.push('/')
+    void router.push('/')
   }
 
   return children

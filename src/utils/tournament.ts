@@ -94,7 +94,7 @@ export const getLeadersFromList: (players: { name: string, score: number }[]) =>
   let index = 0
   playerScores.forEach(player => {
     if (index < 2) {
-      if (player.score < score!) {
+      if (player.score < score) {
         index++
         score = player.score
       }

@@ -49,29 +49,32 @@ const startTournaments = async () => {
     }
   })
   const currentDateTime = new Date()
-  jobs.forEach(async (job) => {
+  void jobs.forEach((job) => {
     if (job.tournament.startDate <= currentDateTime) {
-      startTournament(job.tournamentId)
-      await prisma.tournamentJob.delete({
-        where: {
-          id: job.id
-        }
+      void startTournament(job.tournamentId).then(() => {
+        void prisma.tournamentJob.delete({
+          where: {
+            id: job.id
+          }
+        })
       })
     }
   })
 }
 
 app.prepare().then(() => {
-  setInterval(async () => {
+  void setInterval(() => {
     console.log('Starting tournaments')
-    await startTournaments()
+    void startTournaments()
   }, 1000 * 60 * 60)
   createServer((req, res) => {
-    const parsedUrl = parse(req.url!, true)
-    handle(req, res, parsedUrl)
+    const parsedUrl = parse(req.url, true)
+    void handle(req, res, parsedUrl)
   }).listen(port)
 
   console.log(
     `> Server listening at http://localhost:${port} as ${dev ? 'development' : process.env.NODE_ENV}`
   )
+}).catch(err => {
+  console.log('Error starting server')
 })

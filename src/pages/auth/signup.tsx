@@ -22,7 +22,7 @@ function SignUpPage() {
       setEmail('')
       setPassword('')
       enqueueSnackbar('Successfully created user', { variant: 'success' })
-      router.push('/auth/signin')
+      void router.push('/auth/signin')
     },
     onError(error, variables, context) {
       enqueueSnackbar('Failed to create user', { variant: 'error' })

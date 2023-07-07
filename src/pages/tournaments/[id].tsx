@@ -12,6 +12,14 @@ import { ThemeContext } from "../_app";
 import { useSession } from "next-auth/react";
 
 type TournamentType = RouterOutputs['tournament']['getTournament']
+type GameSubsetType = {
+  id: string
+  round: number
+  player1: string
+  player2: string
+  players: { email: string }[]
+  winner: string
+}
 
 
 const style = {
@@ -76,15 +84,11 @@ const renderTables = (
   dark: boolean,
   userEmail: string) => {
 
-  let rounds = 0
-  const tournamentRounds = []
+  const tournamentRounds: { index: number, games: GameSubsetType[] }[] = []
   const currentDate = new Date()
   const timeDiff = currentDate.getTime() - tournament.startDate.getTime()
   const currentRoundIndex = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * (tournament.roundInterval === 'week' ? 7 : 1)))
-  const games = tournament!.games.map(game => {
-    if ((game.round ?? 0) > rounds) {
-      rounds++;
-    }
+  const games = tournament.games.map(game => {
     let winner = 'To be played'
     if (game.player1Points > game.player2Points) {
       winner = `${game.players[0]?.firstName ?? ''} ${game.players[0]?.lastName ?? ''}`
@@ -103,7 +107,7 @@ const renderTables = (
     }
   })
 
-  for (let round = 0; round < rounds + 1; round++) {
+  for (let round = 0; round < tournament.numRounds + 1; round++) {
     tournamentRounds.push({
       index: round,
       games: games.filter(game => game.round == round)

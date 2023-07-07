@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { findStreakFromRatings } from "~/utils/utils";
+import { Rating } from "@prisma/client";
 
 export const ratingsRouter = createTRPCRouter({
   playerGames: publicProcedure
@@ -7,7 +9,7 @@ export const ratingsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const emptyGames = {
         totalGames: 0,
-        ratings: [],
+        ratings: [] as Rating[],
         streak: 0,
         currentScore: 0,
         avatar: ''
@@ -23,7 +25,7 @@ export const ratingsRouter = createTRPCRouter({
       if (!user) {
         return emptyGames
       }
-      const ratings = await ctx.prisma.rating.findMany({
+      const ratings: Rating[] = await ctx.prisma.rating.findMany({
         where: {
           player: {
             id: input.playerId
@@ -33,25 +35,11 @@ export const ratingsRouter = createTRPCRouter({
           time: 'asc'
         }
       })
-      let streak = 0
-      for (let i = 1; i < ratings.length; i++) {
-        let miniStreak = 0
-        for (; i < ratings.length; i++) {
-          if ((ratings[i]?.rating ?? 0) >= (ratings[i - 1]?.rating ?? 0)) {
-            miniStreak += 1
-            if (miniStreak > streak) {
-              streak = miniStreak
-            }
-          } else {
-            break
-          }
-        }
-      }
 
       return {
         totalGames: ratings.length - 1,
-        ratings: ratings.map(game => ({ rating: game.rating, date: game.time })),
-        streak,
+        ratings,
+        streak: findStreakFromRatings(ratings),
         currentScore: ratings[ratings.length - 1]?.rating ?? 0,
         avatar: user.avatar
       }

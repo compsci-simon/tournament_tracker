@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 export default function LogOutPage() {
   useEffect(() => {
-    signOut({ redirect: false })
+    void signOut({ redirect: false })
   }, [])
   return <Stack justifyContent='center' alignItems='center' sx={{ height: '100%' }}>
     <Paper>

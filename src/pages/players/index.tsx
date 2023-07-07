@@ -8,11 +8,10 @@ import { ThemeContext } from "../_app";
 import { useSession } from "next-auth/react";
 
 
-const playerInfo = (playerId: string, name: string) => {
+const playerInfo = (playerId: string, name: string, dark: boolean) => {
   const { data: user } = api.ratings.playerGames.useQuery({
     playerId
   })
-  const { dark } = useContext(ThemeContext)
 
   return <Stack height='100%'>
     <Stack spacing={2}>
@@ -52,7 +51,7 @@ const playerInfo = (playerId: string, name: string) => {
       <LineChart
         options={options(dark)}
         data={{
-          labels: user?.ratings?.map(rating => rating.date.toUTCString()) ?? [],
+          labels: user?.ratings?.map(rating => rating.time.toUTCString()) ?? [],
           datasets: [{
             label: '',
             data: user?.ratings?.map(rating => rating.rating) ?? [],
@@ -70,6 +69,7 @@ export default function Page() {
   const { data: users } = api.user.getAll.useQuery()
   const [selectedUser, setSelectedUser] = useState<{ id: string, firstName: string, lastName: string } | undefined>()
   const { data: session } = useSession()
+  const { dark } = useContext(ThemeContext)
 
   useEffect(() => {
     const user = users.filter(u => u.email === session.user.email)[0]
@@ -109,7 +109,7 @@ export default function Page() {
       <Box flexGrow={2}>
         <Paper className="h-100">
           <Box padding={2} height='100%'>
-            {playerInfo(selectedUser?.id ?? '', `${selectedUser?.firstName ?? ''} ${selectedUser?.lastName ?? ''}`)}
+            {playerInfo(selectedUser?.id ?? '', `${selectedUser?.firstName ?? ''} ${selectedUser?.lastName ?? ''}`, dark)}
           </Box>
         </Paper>
       </Box>

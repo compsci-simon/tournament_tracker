@@ -2,7 +2,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import NextAuth from "next-auth/next";
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from "~/server/db";
-import { NextAuthOptions } from "next-auth";
+import { NextAuthOptions, User } from "next-auth";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -44,12 +44,12 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (trigger === 'update') {
-        token.image = session.image
-        token.picture = session.image
+        token.image = (session as User).image
+        token.picture = (session as User).image
       }
       return token
     },
-    async session({ session, token, user }) {
+    session({ session, token, user }) {
       session.user.role = token.role === 'admin' ? 'admin' : 'non-admin'
       return session
     },
