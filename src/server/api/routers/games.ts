@@ -10,6 +10,12 @@ export const gamesRouter = createTRPCRouter({
           players: true,
           ratings: true
         },
+        where: {
+          OR: [
+            { player1Points: { gt: 0 } },
+            { player2Points: { gt: 0 } },
+          ]
+        },
         orderBy: {
           time: 'desc'
         }
