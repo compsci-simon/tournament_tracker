@@ -3,10 +3,13 @@ import { useRouter } from "next/router";
 import { api } from "~/utils/api";
 import { RouterOutputs } from "~/server/api/trpc"
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import ReplayIcon from '@mui/icons-material/Replay';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import Layout from "~/components/Layout";
+import { graphSx } from "~/utils/constants";
+import { ThemeContext } from "../_app";
+import { useSession } from "next-auth/react";
 
 type TournamentType = RouterOutputs['tournament']['getTournament']
 
@@ -23,44 +26,61 @@ const style = {
   p: 4,
 };
 
+const columns: (
+  setModalState: Dispatch<SetStateAction<boolean>>,
+  setSelectedGame: Dispatch<SetStateAction<string | undefined>>,
+  userEmail: string) => GridColDef[] = (setModalState, setSelectedGame, userEmail) => {
+
+    return [
+      { field: 'id', headerName: 'ID', width: 90 },
+      {
+        field: 'player1',
+        headerName: 'Player',
+        width: 150,
+      },
+      {
+        field: 'player2',
+        headerName: 'Player',
+        width: 150,
+      },
+      {
+        field: 'winner',
+        headerName: 'Winner',
+        width: 150
+      },
+      {
+        field: 'selectWinner',
+        headerName: 'Set Results',
+        renderCell(params: { row: { id: string, players: { email: string }[] } }) {
+          console.log(params.row)
+          return <Button
+            variant='outlined'
+            onClick={() => {
+              const newGameSelection = `${params?.row?.id ?? ''}`
+              setSelectedGame(newGameSelection)
+              setModalState(true)
+            }}
+            disabled={!params.row.players.map(p => p.email).includes(userEmail)}
+          >
+            Set
+          </Button>
+        },
+      }
+    ];
+  }
 
 const renderTables = (
   tournament: TournamentType,
   setModalState: Dispatch<SetStateAction<boolean>>,
-  setSelectedGame: Dispatch<SetStateAction<string | undefined>>) => {
-  const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    {
-      field: 'player1',
-      headerName: 'Player',
-      width: 150,
-    },
-    {
-      field: 'player2',
-      headerName: 'Player',
-      width: 150,
-    },
-    {
-      field: 'winner',
-      headerName: 'Winner',
-    },
-    {
-      field: 'selectWinner',
-      headerName: 'Set Results',
-      renderCell(params: { row: { id: string } }) {
-        return <Button
-          onClick={() => {
-            const newGameSelection = `${params?.row?.id ?? ''}`
-            setSelectedGame(newGameSelection)
-            setModalState(true)
-          }}
-        >
-          Set
-        </Button>
-      },
-    }
-  ];
+  setSelectedGame: Dispatch<SetStateAction<string | undefined>>,
+  dark: boolean,
+  userEmail: string) => {
+
   let rounds = 0
+  const tournamentRounds = []
+  const currentDate = new Date()
+  const timeDiff = currentDate.getTime() - tournament.startDate.getTime()
+  const currentRoundIndex = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * (tournament.roundInterval === 'week' ? 7 : 1)))
   const games = tournament!.games.map(game => {
     if ((game.round ?? 0) > rounds) {
       rounds++;
@@ -78,10 +98,11 @@ const renderTables = (
       round: game.round,
       player1: game.players[0] ? `${game.players[0].firstName} ${game.players[0].lastName}` : undefined,
       player2: game.players[1] ? `${game.players[1].firstName} ${game.players[1].lastName}` : undefined,
+      players: game.players,
       winner
     }
   })
-  const tournamentRounds = []
+
   for (let round = 0; round < rounds + 1; round++) {
     tournamentRounds.push({
       index: round,
@@ -93,13 +114,14 @@ const renderTables = (
     {tournamentRounds.map(round => {
       return <Paper key={`${round.index}`}>
         <Box padding={2}>
-          Round {round.index}
+          Round {round.index} {currentRoundIndex}
           <hr />
           <DataGrid
-            columns={columns}
+            columns={columns(setModalState, setSelectedGame, userEmail)}
             rows={round.games ?? []}
             disableRowSelectionOnClick
             pageSizeOptions={[5]}
+            sx={graphSx(dark)}
           />
         </Box>
       </Paper>
@@ -115,6 +137,8 @@ export default function TournamentView() {
   const [player1Points, setPlayer1Points] = useState(0)
   const [player2Points, setPlayer2Points] = useState(0)
   const utils = api.useContext()
+  const { dark } = useContext(ThemeContext)
+  const { data: session } = useSession()
   const { mutate: updatePointsMutation } = api.tournament.setGamePoints.useMutation({
     async onSuccess() {
       await utils.tournament.getTournament.invalidate()
@@ -125,13 +149,7 @@ export default function TournamentView() {
     setPlayer2Points(0)
     updatePointsMutation({ gameId: selectedGame ?? '', player1Points: 0, player2Points: 0 })
   }
-  let tournamentId = query.id
-  if (!tournamentId) {
-    tournamentId = ''
-  }
-  if (tournamentId && Array.isArray(tournamentId)) {
-    tournamentId = tournamentId[0]!
-  }
+  const tournamentId = query.id ? Array.isArray(query.id) ? query.id[0] : query.id : ''
   const { data: tournamentData } = api.tournament.getTournament.useQuery({
     id: tournamentId
   })
@@ -213,7 +231,7 @@ export default function TournamentView() {
           </Stack>
         </Box>
       </Paper>
-      {tournamentData ? renderTables(tournamentData, setModalState, setSelectedGame) : null}
+      {tournamentData ? renderTables(tournamentData, setModalState, setSelectedGame, dark, session.user.email) : null}
     </Stack>
   </Box>
 }
