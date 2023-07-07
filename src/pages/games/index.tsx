@@ -2,12 +2,12 @@ import { Box, Paper, Typography } from "@mui/material"
 import { DataGrid, GridColDef } from "@mui/x-data-grid"
 import { useContext } from "react"
 import Layout from "~/components/Layout"
-import { RouterOutputs, api } from "~/utils/api"
+import { api } from "~/utils/api"
 import { ThemeContext } from "../_app"
-import { Prisma } from "@prisma/client"
+import { graphSx } from "~/utils/constants"
 
-const columns = [
-  { field: 'id', headerName: 'ID', style: {} },
+const columns: GridColDef[] = [
+  { field: 'id', headerName: 'ID' },
   {
     field: 'player1', headerName: 'Player 1',
     renderCell(params: { row: { id: string, player1Id: string, players: { id: string, firstName: string }[] } }) {
@@ -57,6 +57,7 @@ const columns = [
     }
   }
 ]
+
 function GamesPage() {
   const { data: games } = api.games.getAll.useQuery()
   const { dark } = useContext(ThemeContext)
@@ -69,14 +70,7 @@ function GamesPage() {
           rows={games ?? []}
           disableRowSelectionOnClick
           pageSizeOptions={[5]}
-          sx={{
-            borderColor: dark ? '#EFEFEF' : 'rgba(81, 81, 81, 1)',
-            withBorderColor: dark ? '#EFEFEF' : 'rgba(81, 81, 81, 1)',
-            "	.MuiDataGrid-withBorderColor": {
-              borderColor: dark ? '#EFEFEF' : 'rgba(81, 81, 81, 1)'
-            },
-            border: 0,
-          }}
+          sx={graphSx(dark)}
         />
       </Box>
     </Paper>
