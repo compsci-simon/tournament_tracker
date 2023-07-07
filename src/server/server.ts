@@ -27,7 +27,14 @@ const startTournament = async (tournamentId: string) => {
     data: {
       games: {
         create: schedule.map(s => {
-          return ({ player1Id: s.player1, player2Id: s.player2 })
+          return ({
+            players: {
+              connect: [({ id: s.player1 }), ({ id: s.player2 })]
+            },
+            player1Id: s.player1,
+            player2Id: s.player2,
+            round: s.round
+          })
         })
       },
       numRounds
@@ -43,7 +50,7 @@ const startTournaments = async () => {
   })
   const currentDateTime = new Date()
   jobs.forEach(async (job) => {
-    if (job.tournament.startDate >= currentDateTime) {
+    if (job.tournament.startDate <= currentDateTime) {
       startTournament(job.tournamentId)
       await prisma.tournamentJob.delete({
         where: {
