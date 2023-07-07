@@ -81,3 +81,50 @@ export const colors = [
     backgroundColor: 'rgba(128, 0, 0, 0.5)'
   }
 ]
+
+export const options = (dark: boolean) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: {
+      display: false,
+      border: {
+        color: dark ? '#EFEFEF' : '#080808'
+      }
+    },
+    y: {
+      ticks: {
+        color: dark ? '#EFEFEF' : '#080808'
+      },
+      grid: {
+        color: dark ? '#EFEFEF' : '#080808'
+      },
+      border: {
+        color: dark ? '#EFEFEF' : '#080808'
+      }
+    },
+  },
+  plugins: {
+    legend: {
+      position: 'top' as const,
+      color: dark ? '#EFEFEF' : '#080808',
+      labels: {
+        color: dark ? '#EFEFEF' : '#080808',
+      }
+    },
+    title: {
+      display: true,
+      text: 'Elo history',
+      color: dark ? '#EFEFEF' : '#080808'
+    },
+  },
+})
+
+export const graphSx = (dark: boolean) => ({
+  borderColor: dark ? '#CDC1C1' : 'rgba(81, 81, 81, 1)',
+  withBorderColor: dark ? '#CDC1C1' : 'rgba(81, 81, 81, 1)',
+  "	.MuiDataGrid-withBorderColor": {
+    borderColor: dark ? '#CDC1C1' : 'rgba(81, 81, 81, 1)'
+  },
+  border: 0,
+})
