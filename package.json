@@ -3,11 +3,11 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"build": "next build",
 		"dev": "nodemon",
+		"build": "next build && tsc --project tsconfig.server.json",
 		"postinstall": "prisma generate",
 		"lint": "next lint",
-		"start": "next start"
+		"start": "NODE_ENV=production node dist/server/server.js"
 	},
 	"dependencies": {
 		"@emotion/react": "^11.11.1",
