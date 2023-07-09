@@ -118,7 +118,7 @@ const renderTables = (
     {tournamentRounds.map(round => {
       return <Paper key={`${round.index}`}>
         <Box padding={2}>
-          Round {round.index} {currentRoundIndex}
+          Round {round.index}
           <hr />
           <DataGrid
             columns={columns(setModalState, setSelectedGame, userEmail)}

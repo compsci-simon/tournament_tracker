@@ -28,7 +28,7 @@ export const userRouter = createTRPCRouter({
           code: 'CONFLICT'
         })
       }
-      const avatar = await generateAvatar(input.nickName ?? `${input.firstName} ${input.lastName}`, input.gender)
+      const avatar = generateAvatar(input.nickName ?? `${input.firstName} ${input.lastName}`, input.gender)
       const isAdmin = (await ctx.prisma.user.findMany()).length == 0
       return await ctx.prisma.user.create({
         data: {
