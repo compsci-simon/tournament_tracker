@@ -21,7 +21,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV DATABASE_URL file:./db.sqlite
+ENV SKIP_ENV_VALIDATION true
 
 RUN npm run build;
 
@@ -33,22 +33,25 @@ WORKDIR /app
 ENV DATABASE_URL file:./db.sqlite
 ENV NODE_ENV production
 
-COPY --chown=nextjs:nodjs ./prisma .
+COPY --chown=nextjs:nodjs ./prisma ./prisma
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 RUN npx prisma db push
 RUN chown -R nextjs:node /app
 
-COPY --from=builder /app/next.config.mjs ./
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/dist ./dist
 
 USER nextjs
 EXPOSE 3000
 ENV PORT 3000
+ENV NODE_ENV development
+ENV NEXTAUTH_URL 'http://localhost:3000/api/auth'
+ENV NEXTAUTH_SECRET 'cloudy-skies'
 
-CMD ["node", "server.js"]
+# CMD ["node", "dist/server/server.js"]
+CMD ["tail", "-f", "/dev/null"]
