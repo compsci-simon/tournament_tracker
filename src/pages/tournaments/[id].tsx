@@ -91,17 +91,17 @@ const renderTables = (
   const games = tournament.games.map(game => {
     let winner = 'To be played'
     if (game.player1Points > game.player2Points) {
-      winner = `${game.players[0]?.firstName ?? ''} ${game.players[0]?.lastName ?? ''}`
+      winner = game.players[0].name
     } else if (game.player1Points < game.player2Points) {
-      winner = `${game.players[1]?.firstName ?? ''} ${game.players[1]?.lastName ?? ''}`
+      winner = game.players[1].name
     } else if (game.player1Points == game.player2Points && game.player1Points > 0) {
       winner = 'Draw'
     }
     return {
       id: game.id,
       round: game.round,
-      player1: game.players[0] ? `${game.players[0].firstName} ${game.players[0].lastName}` : undefined,
-      player2: game.players[1] ? `${game.players[1].firstName} ${game.players[1].lastName}` : undefined,
+      player1: game.players[0]?.name,
+      player2: game.players[1]?.name,
       players: game.players,
       winner
     }
@@ -174,7 +174,7 @@ export default function TournamentView() {
     >
       <Box sx={style}>
         <Stack spacing={2}>
-          <Typography>{`${selectedGameData?.players[0]?.firstName ?? ''} ${selectedGameData?.players[0]?.lastName ?? ''}`}</Typography>
+          <Typography>{selectedGameData?.players[0]?.name ?? ''}</Typography>
           <TextField
             label='Points'
             type='number'
@@ -185,7 +185,7 @@ export default function TournamentView() {
               }
             }}
           />
-          <Typography>{`${selectedGameData?.players[1]?.firstName ?? ''} ${selectedGameData?.players[1]?.lastName ?? ''}`}</Typography>
+          <Typography>{selectedGameData?.players[1]?.name ?? ''}</Typography>
           <TextField
             label='Points'
             type='number'

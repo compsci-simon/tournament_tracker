@@ -10,15 +10,9 @@ import TabPanel from "~/components/TabPanel";
 const userColumns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 90 },
   {
-    field: 'firstName',
-    headerName: 'First name',
-    width: 150,
-    editable: true,
-  },
-  {
-    field: 'lastName',
-    headerName: 'Last name',
-    editable: true,
+    field: 'name',
+    headerName: 'Name',
+    editable: false,
   },
   {
     field: 'deleteUser',

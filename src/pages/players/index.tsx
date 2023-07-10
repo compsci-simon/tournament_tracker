@@ -67,7 +67,7 @@ const playerInfo = (playerId: string, name: string, dark: boolean) => {
 
 export default function Page() {
   const { data: users } = api.user.getAll.useQuery()
-  const [selectedUser, setSelectedUser] = useState<{ id: string, firstName: string, lastName: string } | undefined>()
+  const [selectedUser, setSelectedUser] = useState<{ id: string, name: string } | undefined>()
   const { data: session } = useSession()
   const { dark } = useContext(ThemeContext)
 
@@ -97,7 +97,7 @@ export default function Page() {
                     key={user.id}
                   >
                     <ListItem disablePadding>
-                      {user.firstName} {user.lastName}
+                      {user.name}
                     </ListItem>
                   </ListItemButton>
                 })}
@@ -109,7 +109,7 @@ export default function Page() {
       <Box flexGrow={2}>
         <Paper className="h-100">
           <Box padding={2} height='100%'>
-            {playerInfo(selectedUser?.id ?? '', `${selectedUser?.firstName ?? ''} ${selectedUser?.lastName ?? ''}`, dark)}
+            {playerInfo(selectedUser?.id ?? '', `${selectedUser.name ?? ''}`, dark)}
           </Box>
         </Paper>
       </Box>

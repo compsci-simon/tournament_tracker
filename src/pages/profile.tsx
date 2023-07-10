@@ -26,20 +26,16 @@ type EditUserModalProps = {
     id: string;
     email: string;
     createdAt: Date;
-    firstName: string;
-    lastName: string;
     password: string;
-    nickName: string | null;
+    name: string;
     avatar: string;
   }
 }
 
 function EditUserModal(props: EditUserModalProps) {
   const { open, setOpen, user } = props
-  const [firstName, setFirstName] = useState(user.firstName)
-  const [lastName, setLastName] = useState(user.lastName)
   const [email, setEmail] = useState(user.email)
-  const [nickName, setNickName] = useState(user.nickName ?? '')
+  const [name, setName] = useState(user.name)
   const [password, setPassword] = useState('')
   const [avatar, setAvatar] = useState(user.avatar)
   const { update: updateSession } = useSession()
@@ -96,20 +92,6 @@ function EditUserModal(props: EditUserModalProps) {
           </Grid>
           <Grid item xs={6}>
             <TextField
-              label='First Name'
-              value={firstName}
-              onChange={e => setFirstName(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={6}>
-            <TextField
-              label='Last Name'
-              value={lastName}
-              onChange={e => setLastName(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={6}>
-            <TextField
               label='Email'
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -118,8 +100,8 @@ function EditUserModal(props: EditUserModalProps) {
           <Grid item xs={6}>
             <TextField
               label='Nick Name (optional)'
-              value={nickName}
-              onChange={e => setNickName(e.target.value)}
+              value={name}
+              onChange={e => setName(e.target.value)}
             />
           </Grid>
           <Grid item xs={6} >
@@ -150,9 +132,7 @@ function EditUserModal(props: EditUserModalProps) {
               updateUserMutation({
                 id: user.id,
                 email,
-                firstName,
-                lastName,
-                nickName: nickName ?? null,
+                name,
                 avatar
               })
             }}>
@@ -180,7 +160,7 @@ export default function ProfilePage() {
       <Box padding={4}>
         <Stack spacing={2}>
           <Stack direction='row' justifyContent='space-between'>
-            <Typography variant='h4' >{user?.firstName} {user?.lastName} {user?.nickName ? <span>({user?.nickName})</span> : null}</Typography>
+            <Typography variant='h4' >{user?.name}</Typography>
             <Button variant="outlined" onClick={() => setOpen(true)}>
               Edit
             </Button>

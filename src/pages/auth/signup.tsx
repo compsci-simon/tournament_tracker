@@ -7,18 +7,14 @@ import { SHA256 } from 'crypto-js';
 import { enqueueSnackbar } from 'notistack'
 
 function SignUpPage() {
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [nickname, setNickname] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [gender, setGender] = useState('female')
   const router = useRouter()
   const { mutate: createUserMutation } = api.user.createUser.useMutation({
     onSuccess() {
-      setFirstName('')
-      setLastName('')
-      setNickname('')
+      setName('')
       setEmail('')
       setPassword('')
       enqueueSnackbar('Successfully created user', { variant: 'success' })
@@ -31,9 +27,7 @@ function SignUpPage() {
 
   const handleSignUp = () => {
     createUserMutation({
-      firstName,
-      lastName,
-      nickName: nickname,
+      name,
       email,
       password: SHA256(password).toString(),
       gender
@@ -48,31 +42,13 @@ function SignUpPage() {
             <Grid item xs={12}>
               <Typography fontSize={24}>Sign Up</Typography>
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label='First Name'
-                type='text'
-                fullWidth
-                value={firstName}
-                onChange={e => setFirstName(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label='Last Name'
-                type='text'
-                fullWidth
-                value={lastName}
-                onChange={e => setLastName(e.target.value)}
-              />
-            </Grid>
             <Grid item xs={12}>
               <TextField
-                label='Nickname (optional)'
+                label='Name'
                 type='text'
                 fullWidth
-                value={nickname}
-                onChange={e => setNickname(e.target.value)}
+                value={name}
+                onChange={e => setName(e.target.value)}
               />
             </Grid>
             <Grid item xs={12}>

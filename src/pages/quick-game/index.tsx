@@ -55,7 +55,7 @@ export default function Page() {
                   disabled
                 >
                   <MenuItem value={player1}>
-                    <em>{users?.filter(u => u.email == player1)[0]?.firstName} (You)</em>
+                    <em>{users?.filter(u => u.email == player1)[0]?.name} (You)</em>
                   </MenuItem>
                 </Select>
                 <TextField
@@ -88,7 +88,7 @@ export default function Page() {
                   </MenuItem>
                   {users?.filter(user => user.email != player1).map(player => {
                     return <MenuItem key={player.id} value={player.email}>
-                      {player.firstName} {player.lastName}
+                      {player.name}
                     </MenuItem>
                   })}
                 </Select>

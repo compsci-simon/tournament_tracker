@@ -28,7 +28,7 @@ export const authOptions: NextAuthOptions = {
         }
         return {
           id: user.id,
-          name: user.nickName ?? `${user.firstName} ${user.lastName}`,
+          name: user.name,
           email: user.email,
           image: user.avatar,
           role: user.role

@@ -273,7 +273,7 @@ export const tournamentRouter = createTRPCRouter({
             wins.push(totalWins)
           })
           return {
-            label: `${player.firstName} ${player.lastName}`,
+            label: player.name,
             data: wins,
             borderColor: colors[index]?.borderColor ?? defaultBorderColor,
             backgroundColor: colors[index]?.backgroundColor ?? defaultBackgroundColor,
@@ -316,7 +316,7 @@ export const tournamentRouter = createTRPCRouter({
             playerScoresMap[player.id]!.score += 1
           } else {
             playerScoresMap[player.id] = {
-              name: `${player.firstName} ${player.lastName}`,
+              name: player.name,
               score: 1
             }
           }

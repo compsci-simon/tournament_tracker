@@ -9,17 +9,18 @@ export const userRouter = createTRPCRouter({
   }),
   createUser: publicProcedure
     .input(z.object({
-      firstName: z.string().min(3),
-      lastName: z.string().min(3),
       email: z.string().min(3),
       password: z.string().min(4),
-      nickName: z.string().nullable(),
+      name: z.string().min(1),
       gender: z.string().min(1)
     }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findFirst({
         where: {
-          email: input.email
+          OR: [
+            { email: input.email },
+            { name: input.name }
+          ]
         }
       })
       if (user) {
@@ -28,15 +29,13 @@ export const userRouter = createTRPCRouter({
           code: 'CONFLICT'
         })
       }
-      const avatar = generateAvatar(input.nickName ?? `${input.firstName} ${input.lastName}`, input.gender)
+      const avatar = generateAvatar(input.name, input.gender)
       const isAdmin = (await ctx.prisma.user.findMany()).length == 0
       return await ctx.prisma.user.create({
         data: {
-          firstName: input.firstName,
-          lastName: input.lastName,
           email: input.email,
           password: input.password,
-          nickName: input.nickName,
+          name: input.name,
           avatar,
           gender: input.gender,
           role: isAdmin ? 'admin' : 'player',
@@ -66,7 +65,7 @@ export const userRouter = createTRPCRouter({
       }
       return {
         id: user.id,
-        name: user.nickName ?? `${user.firstName} ${user.lastName}`,
+        name: user.name,
         email: user.email
       }
     }),
@@ -106,22 +105,35 @@ export const userRouter = createTRPCRouter({
   updateUserProfile: publicProcedure
     .input(z.object({
       id: z.string().min(1),
-      email: z.string().email(),
-      firstName: z.string().min(2),
-      lastName: z.string().min(2),
-      nickName: z.string().nullish(),
+      email: z.string().email().min(1),
+      name: z.string().min(1),
       avatar: z.string().min(1)
     }))
     .mutation(async ({ ctx, input }) => {
+      const user = ctx.prisma.user.findFirst({
+        where: {
+          NOT: {
+            id: input.id
+          },
+          OR: [
+            { email: input.email },
+            { name: input.name }
+          ]
+        }
+      })
+      if (user) {
+        return new TRPCError({
+          message: 'Email or name already in use by other user.',
+          code: 'CONFLICT'
+        })
+      }
       return await ctx.prisma.user.update({
         where: {
           id: input.id
         },
         data: {
           email: input.email,
-          firstName: input.firstName,
-          lastName: input.lastName,
-          nickName: input.nickName,
+          name: input.name,
           avatar: input.avatar,
         }
       })

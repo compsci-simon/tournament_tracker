@@ -2,8 +2,7 @@
 type PlayerType = {
   id: string;
   createdAt: Date;
-  firstName: string;
-  lastName: string;
+  name: string;
   avatar: string;
 }
 
@@ -16,8 +15,7 @@ type RatingType = {
   player: {
     id: string;
     createdAt: Date;
-    firstName: string;
-    lastName: string;
+    name: string;
   }
 }
 
@@ -148,7 +146,7 @@ export const weeksBiggestGainer = (players: PlayerType[], ratings: RatingType[])
     }
     playerIncreases.push({
       increase,
-      name: `${player.firstName} ${player.lastName}`
+      name: player.name
     })
   })
   const biggestGainer = playerIncreases.sort((a, b) => b.increase - a.increase)[0]
@@ -167,7 +165,7 @@ export const mostGamesUser = (players: PlayerType[], games: GameType[]) => {
 
   players.forEach(player => {
     totalGames[player.id] = {
-      name: `${player.firstName} ${player.lastName}`,
+      name: player.name,
       totalGames: 0
     }
   })
@@ -195,7 +193,7 @@ export const playerRankingHistories = (players: PlayerType[], rankings: RatingTy
   players.forEach(player => {
     const playerHistory = rankings.filter(ranking => ranking.userId == player.id).sort((a, b) => a.time.getTime() - b.time.getTime())
     historiesMap[player.id] = {
-      name: `${player.firstName} ${player.lastName}`,
+      name: player.name,
       history: playerHistory.map(h => h.rating),
       current: playerHistory[playerHistory.length - 1]?.rating ?? 0,
       avatar: player.avatar

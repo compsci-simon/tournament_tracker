@@ -92,7 +92,7 @@ export default function TransferList({ left, setLeft, right, setRight }: Transfe
                   }}
                 />
               </ListItemIcon>
-              <ListItemText id={labelId} primary={`${value.firstName} ${value.lastName}`} />
+              <ListItemText id={labelId} primary={value.name} />
             </ListItem>
           );
         })}

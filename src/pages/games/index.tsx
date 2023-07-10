@@ -10,16 +10,16 @@ const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID' },
   {
     field: 'player1', headerName: 'Player 1',
-    renderCell(params: { row: { id: string, player1Id: string, players: { id: string, firstName: string }[] } }) {
+    renderCell(params: { row: { id: string, player1Id: string, players: { id: string, name: string }[] } }) {
       const player = params.row.players.filter(p => p.id == params.row.player1Id)[0]
-      return <span>{player?.firstName}</span>
+      return <span>{player?.name}</span>
     }
   },
   {
     field: 'player2', headerName: 'Player 2',
-    renderCell(params: { row: { id: string, player2Id: string, players: { id: string, firstName: string }[] } }) {
+    renderCell(params: { row: { id: string, player2Id: string, players: { id: string, name: string }[] } }) {
       const player = params.row.players.filter(p => p.id == params.row.player2Id)[0]
-      return <span>{player?.firstName}</span>
+      return <span>{player?.name}</span>
     }
   },
   {

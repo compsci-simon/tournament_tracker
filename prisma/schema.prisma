@@ -4,6 +4,7 @@
 generator client {
     provider        = "prisma-client-js"
     previewFeatures = ["jsonProtocol"]
+    binaryTargets   = ["linux-musl-openssl-3.0.x", "native"]
 }
 
 datasource db {
@@ -40,10 +41,9 @@ model Session {
 
 model User {
     id            String       @id @default(cuid())
-    email         String?      @unique
+    email         String       @unique
     createdAt     DateTime     @default(now())
-    firstName     String
-    lastName      String
+    name          String       @unique
     password      String       @default("866091acb5ff40f25f6d72b9ed3152c7dfb7fb605d5f39b4dec2a2e9f3e99202")
     nickName      String?
     avatar        String
@@ -55,7 +55,6 @@ model User {
     trophies      Trophy[]
     accounts      Account[]
     sessions      Session[]
-    name          String?
     emailVerified DateTime?
     image         String?
 }

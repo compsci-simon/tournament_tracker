@@ -90,9 +90,9 @@ export default function TournamentsPage() {
                   </tr>
                   {tournament.players.map(player => {
                     if (player.email == session.user.email) {
-                      return <tr key={player.email}><td colSpan={2}><em>You</em></td></tr>
+                      return <tr key={player.email}><td><em>You</em></td></tr>
                     }
-                    return <tr key={player.email}><td>{player.firstName}</td><td>{player.lastName}</td></tr>
+                    return <tr key={player.email}><td>{player.name}</td></tr>
                   })}
                 </table>
               </Box>
