@@ -95,7 +95,7 @@ model Game {
     player1Points Int         @default(0)
     player2Points Int         @default(0)
     player1Id     String
-    player2Id     String
+    player2Id     String?
     ratings       Rating[]
 }
 
