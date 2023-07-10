@@ -20,10 +20,10 @@ const startTournament = async (tournamentId: string) => {
         create: schedule.map(s => {
           return ({
             players: {
-              connect: [({ id: s.player1 }), ({ id: s.player2 })]
+              connect: s.player2 ? [({ id: s.player1 }), ({ id: s.player2 })] : [({ id: s.player1 })]
             },
             player1Id: s.player1,
-            player2Id: s.player2,
+            player2Id: s.player2 ?? '',
             round: s.round
           })
         })
