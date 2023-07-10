@@ -55,6 +55,6 @@ const startTournaments = async () => {
 
 export const register = () => {
   setInterval(() => {
-    startTournaments()
+    void startTournaments()
   }, 1000 * 60 * 60)
 }
