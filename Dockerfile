@@ -21,7 +21,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV SKIP_ENV_VALIDATION true
+ENV SKIP_ENV_VALIDATION 1
 
 RUN npm run build;
 
@@ -30,28 +30,27 @@ RUN npm run build;
 FROM --platform=linux/amd64 node:16-alpine3.17 AS runner
 WORKDIR /app
 
-ENV DATABASE_URL file:./db.sqlite
 ENV NODE_ENV production
-
-COPY --chown=nextjs:nodjs ./prisma ./prisma
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-RUN npx prisma db push
-RUN chown -R nextjs:node /app
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/public ./public
-
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/dist ./dist
-
-USER nextjs
-EXPOSE 3000
+ENV DATABASE_URL file:./db.sqlite
 ENV PORT 3000
-ENV NODE_ENV development
 ENV NEXTAUTH_URL 'http://localhost:3000/api/auth'
 ENV NEXTAUTH_SECRET 'cloudy-skies'
 
-# CMD ["node", "dist/server/server.js"]
-CMD ["tail", "-f", "/dev/null"]
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --chown=nextjs:nodejs ./prisma ./prisma
+# RUN npx prisma db push
+
+COPY --from=builder /app/next.config.mjs ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# RUN chown nextjs:nodejs ./prisma/db.sqlite
+USER nextjs
+EXPOSE 3000
+
+CMD ["node", "server.js"]
