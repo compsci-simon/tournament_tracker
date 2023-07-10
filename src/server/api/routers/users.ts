@@ -110,7 +110,7 @@ export const userRouter = createTRPCRouter({
       avatar: z.string().min(1)
     }))
     .mutation(async ({ ctx, input }) => {
-      const user = ctx.prisma.user.findFirst({
+      const user = await ctx.prisma.user.findFirst({
         where: {
           NOT: {
             id: input.id
