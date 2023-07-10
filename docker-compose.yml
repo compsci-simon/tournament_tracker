@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+    league:
+        image: simona4220/league:v2
+        ports:
+            - 80:3000
+        depends_on:
+            - postgres
+
+    postgres:
+        images: postgres
+        ports:
+            - 5432:5432
