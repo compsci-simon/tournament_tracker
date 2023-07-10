@@ -72,7 +72,7 @@ export default function Page() {
   const { dark } = useContext(ThemeContext)
 
   useEffect(() => {
-    const user = users.filter(u => u.email === session.user.email)[0]
+    const user = users?.filter(u => u.email === session.user.email)[0]
     setSelectedUser(user)
   }, [session])
 
