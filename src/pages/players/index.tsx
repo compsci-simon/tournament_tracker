@@ -109,7 +109,7 @@ export default function Page() {
       <Box flexGrow={2}>
         <Paper className="h-100">
           <Box padding={2} height='100%'>
-            {playerInfo(selectedUser?.id ?? '', `${selectedUser.name ?? ''}`, dark)}
+            {playerInfo(selectedUser?.id ?? '', `${selectedUser?.name ?? ''}`, dark)}
           </Box>
         </Paper>
       </Box>
