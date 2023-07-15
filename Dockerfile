@@ -52,5 +52,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # RUN chown nextjs:nodejs ./prisma/db.sqlite
 USER nextjs
 EXPOSE 3000
+EXPOSE 80
 
 CMD ["node", "server.js"]
