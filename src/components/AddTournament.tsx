@@ -1,11 +1,10 @@
 import { useState } from "react"
 import { api } from "~/utils/api"
 import { Box, Button, Checkbox, FormControlLabel, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import React from "react"
 import dayjs, { Dayjs } from 'dayjs'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from "@mui/x-date-pickers"
+import { LocalizationProvider, MobileDateTimePicker } from "@mui/x-date-pickers"
 import { enqueueSnackbar } from "notistack";
 
 type AddTournamentProps = {
@@ -40,7 +39,7 @@ export default function AddTournament({ handleSubmit, handleCancel }: AddTournam
     </Box>
     <Box>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <DatePicker label="Tournament start date" value={startDate} onChange={newVal => setStartDate(newVal)} />
+        <MobileDateTimePicker label="Tournament start date" defaultValue={startDate} onChange={newVal => setStartDate(newVal)} />
       </LocalizationProvider>
     </Box>
     <Box>
