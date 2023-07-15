@@ -236,6 +236,9 @@ export const tournamentRouter = createTRPCRouter({
       const tournaments = await ctx.prisma.tournament.findMany({
         include: {
           players: true
+        },
+        orderBy: {
+          startDate: 'desc'
         }
       })
       const allGames = await ctx.prisma.game.findMany({
