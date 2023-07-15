@@ -127,11 +127,11 @@ function ResponsiveAppBar() {
 
           <ThemeSwitch defaultChecked value={dark} onChange={() => setDark(!dark)} />
           {isAdmin ?
-            <Box sx={{ paddingLeft: '10px', mr: '20px' }}>
-              <Link href='/admin'>
+            <Link href='/admin'>
+              <Box sx={{ paddingLeft: '10px', mr: '20px' }}>
                 <AdminPanelSettingsIcon fontSize='large' />
-              </Link>
-            </Box>
+              </Box>
+            </Link>
             : null
           }
 
@@ -158,11 +158,11 @@ function ResponsiveAppBar() {
               onClose={handleCloseUserMenu}
             >
               {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Link href={`/${setting.toLowerCase()}`}>
+                <Link href={`/${setting.toLowerCase()}`}>
+                  <MenuItem key={setting} onClick={handleCloseUserMenu}>
                     <Typography textAlign="center">{setting}</Typography>
-                  </Link>
-                </MenuItem>
+                  </MenuItem>
+                </Link>
               ))}
             </Menu>
           </Box>
