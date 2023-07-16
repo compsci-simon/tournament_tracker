@@ -1,4 +1,4 @@
-import { Box, Button, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Collapse, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import { api } from "~/utils/api";
 import { RouterOutputs } from "~/server/api/trpc"
@@ -10,6 +10,7 @@ import Layout from "~/components/Layout";
 import { graphSx } from "~/utils/constants";
 import { ThemeContext } from "../_app";
 import { useSession } from "next-auth/react";
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
 
 type TournamentType = RouterOutputs['tournament']['getTournament']
 type GameSubsetType = {
@@ -77,17 +78,28 @@ const columns: (
     ];
   }
 
-const renderTables = (
+type RenderTablesProps = {
   tournament: TournamentType,
   setModalState: Dispatch<SetStateAction<boolean>>,
   setSelectedGame: Dispatch<SetStateAction<string | undefined>>,
   dark: boolean,
-  userEmail: string) => {
+  userEmail: string
+}
+
+const RenderTables = (
+  {
+    tournament,
+    setModalState,
+    setSelectedGame,
+    dark,
+    userEmail
+  }: RenderTablesProps) => {
 
   const tournamentRounds: { index: number, games: GameSubsetType[] }[] = []
   const currentDate = new Date()
   const timeDiff = currentDate.getTime() - tournament.startDate.getTime()
   const currentRoundIndex = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * (tournament.roundInterval === 'week' ? 7 : 1)))
+  const [open, setOpen] = useState<boolean[]>([])
   const games = tournament.games.map(game => {
     let winner = 'To be played'
     if (game.player1Points > game.player2Points) {
@@ -106,6 +118,27 @@ const renderTables = (
       winner
     }
   })
+  const selectRound = (roundIndex: number) => {
+    setOpen(open.map((state, index) => {
+      if (index != roundIndex) {
+        return state
+      } else {
+        return !state
+      }
+    }))
+  }
+
+  useEffect(() => {
+    const state = []
+    for (let i = 0; i < tournament.numRounds; i++) {
+      if (i == currentRoundIndex) {
+        state.push(true)
+      } else {
+        state.push(false)
+      }
+    }
+    setOpen(state)
+  }, [tournament])
 
   for (let round = 0; round < tournament.numRounds + 1; round++) {
     tournamentRounds.push({
@@ -118,15 +151,26 @@ const renderTables = (
     {tournamentRounds.map(round => {
       return <Paper key={`${round.index}`}>
         <Box padding={2}>
-          Round {round.index}
-          <hr />
-          <DataGrid
-            columns={columns(setModalState, setSelectedGame, userEmail)}
-            rows={round.games ?? []}
-            disableRowSelectionOnClick
-            pageSizeOptions={[5]}
-            sx={graphSx(dark)}
-          />
+          <Stack direction='row' justifyContent='space-between'>
+            <span>
+              Round {round.index}
+            </span>
+            <Button
+              onClick={() => selectRound(round.index)}
+            >
+              {open[round.index] ? <ExpandLess /> : <ExpandMore />}
+            </Button>
+          </Stack>
+          <Collapse in={open[round.index]} timeout="auto" unmountOnExit>
+            <hr />
+            <DataGrid
+              columns={columns(setModalState, setSelectedGame, userEmail)}
+              rows={round.games ?? []}
+              disableRowSelectionOnClick
+              pageSizeOptions={[5]}
+              sx={graphSx(dark)}
+            />
+          </Collapse>
         </Box>
       </Paper>
     })}
@@ -235,7 +279,13 @@ export default function TournamentView() {
           </Stack>
         </Box>
       </Paper>
-      {tournamentData ? renderTables(tournamentData, setModalState, setSelectedGame, dark, session.user.email) : null}
+      {tournamentData ? <RenderTables
+        tournament={tournamentData}
+        setModalState={setModalState}
+        setSelectedGame={setSelectedGame}
+        dark={dark}
+        userEmail={session?.user.email}
+      /> : null}
     </Stack>
   </Box>
 }
