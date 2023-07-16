@@ -61,7 +61,6 @@ const columns: (
         field: 'selectWinner',
         headerName: 'Set Results',
         renderCell(params: { row: { id: string, players: { email: string }[] } }) {
-          console.log(params.row)
           return <Button
             variant='outlined'
             onClick={() => {
@@ -140,7 +139,7 @@ const RenderTables = (
     setOpen(state)
   }, [tournament])
 
-  for (let round = 0; round < tournament.numRounds + 1; round++) {
+  for (let round = 0; round < tournament.numRounds; round++) {
     tournamentRounds.push({
       index: round,
       games: games.filter(game => game.round == round)
