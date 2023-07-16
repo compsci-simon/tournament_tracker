@@ -213,9 +213,6 @@ export const calculateNewRatings = (player1Rating: number, player2Rating: number
   const outcome = player1Wins ? 1 : 0
   const player1RatingChange = kFactor * (outcome - expectedOutcome1)
   const player2RatingChange = kFactor * ((1 - outcome) - expectedOutcome2)
-  if (player1RatingChange * -1 != player2RatingChange) {
-    console.log('here')
-  }
   const player1NewRating = (player1Rating) + player1RatingChange
   const player2NewRating = (player2Rating) + player2RatingChange
   return {
