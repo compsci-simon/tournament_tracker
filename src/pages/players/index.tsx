@@ -79,30 +79,32 @@ export default function Page() {
   return <Box height='100%' padding={2}>
     <Stack className="h-100" direction='row' spacing={2}>
       <Box>
-        <Paper className="h-100">
-          <Box padding={2}>
-            <Stack>
-              <Typography variant='overline'>
-                Players
-              </Typography>
-              <TextField
-                label='Find Player'
-                variant='standard'
-              />
-              <List disablePadding>
-                {users?.map(user => {
-                  return <ListItemButton
-                    selected={selectedUser?.id == user.id}
-                    onClick={() => setSelectedUser(user)}
-                    key={user.id}
-                  >
-                    <ListItem disablePadding>
-                      {user.name}
-                    </ListItem>
-                  </ListItemButton>
-                })}
-              </List>
-            </Stack>
+        <Paper className="h-100" style={{ width: '200px' }}>
+          <Box className="h-100" padding={3}>
+            <Box sx={{ height: '100%', overflow: 'hidden' }}>
+              <Stack>
+                <Typography variant='overline'>
+                  Players
+                </Typography>
+                <TextField
+                  label='Find Player'
+                  variant='standard'
+                />
+                <List disablePadding>
+                  {users?.map(user => {
+                    return <ListItemButton
+                      selected={selectedUser?.id == user.id}
+                      onClick={() => setSelectedUser(user)}
+                      key={user.id}
+                    >
+                      <ListItem disablePadding>
+                        {user.name}
+                      </ListItem>
+                    </ListItemButton>
+                  })}
+                </List>
+              </Stack>
+            </Box>
           </Box>
         </Paper>
       </Box>
