@@ -6,6 +6,7 @@ import LineChart from "~/components/LineChart";
 import { colors, options } from "~/utils/constants";
 import { ThemeContext } from "../_app";
 import { useSession } from "next-auth/react";
+import Fuse from 'fuse.js'
 
 
 const playerInfo = (playerId: string, name: string, dark: boolean) => {
@@ -70,11 +71,16 @@ export default function Page() {
   const [selectedUser, setSelectedUser] = useState<{ id: string, name: string } | undefined>()
   const { data: session } = useSession()
   const { dark } = useContext(ThemeContext)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     const user = users?.filter(u => u.email === session.user.email)[0]
     setSelectedUser(user)
   }, [session])
+  const fuse = new Fuse(users, {
+    keys: ['name']
+  })
+  const usersToShow = search && users ? fuse.search(search).map(u => u.item) : users
 
   return <Box height='100%' padding={2}>
     <Stack className="h-100" direction='row' spacing={2}>
@@ -89,9 +95,11 @@ export default function Page() {
                 <TextField
                   label='Find Player'
                   variant='standard'
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
                 />
                 <List disablePadding>
-                  {users?.map(user => {
+                  {usersToShow.map(user => {
                     return <ListItemButton
                       selected={selectedUser?.id == user.id}
                       onClick={() => setSelectedUser(user)}
