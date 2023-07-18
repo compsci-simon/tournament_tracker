@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { api } from "~/utils/api"
-import { Box, Button, Checkbox, FormControlLabel, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
+import { Box, Button, Checkbox, FormControl, FormControlLabel, FormLabel, InputLabel, MenuItem, Radio, RadioGroup, Select, Stack, TextField, Typography } from "@mui/material"
 import React from "react"
 import dayjs, { Dayjs } from 'dayjs'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -17,6 +17,7 @@ export default function AddTournament({ handleSubmit, handleCancel }: AddTournam
   const [startDate, setStartDate] = React.useState<Dayjs | null>(dayjs());
   const [roundInterval, setRoundInterval] = useState<string>('week')
   const [emailReminders, setEmailReminders] = useState(false)
+  const [tournamentType, setTournamentType] = useState('round-robbin')
   const utils = api.useContext()
   const { mutate: createTournament } = api.tournament.createTournament.useMutation({
     async onSuccess() {
@@ -28,6 +29,9 @@ export default function AddTournament({ handleSubmit, handleCancel }: AddTournam
       enqueueSnackbar('Failed to create tournament', { variant: 'error' })
     }
   })
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTournamentType((event.target as HTMLInputElement).value);
+  };
 
   return <Stack spacing={2}>
     <Box>
@@ -60,6 +64,18 @@ export default function AddTournament({ handleSubmit, handleCancel }: AddTournam
       />}
       label="Email reminders"
     />
+    <FormControl>
+      <FormLabel>Tournament Type</FormLabel>
+      <RadioGroup
+        defaultValue="round-robbin"
+        name="radio-buttons-group"
+        value={tournamentType}
+        onChange={handleChange}
+      >
+        <FormControlLabel value="round-robbin" control={<Radio />} label="Round robbin" />
+        <FormControlLabel value="multi-stage" control={<Radio />} label="Multi stage" />
+      </RadioGroup>
+    </FormControl>
     <Stack direction='row' spacing={1} justifyContent='end'>
       <Button
         color='error'
