@@ -31,6 +31,9 @@ export const tournamentRouter = createTRPCRouter({
           startDate: input.startDate,
           emailReminders: input.emailReminders,
           roundInterval: input.roundInterval,
+          TournamentJob: {
+            create: {}
+          }
         }
       })
     }),
