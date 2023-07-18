@@ -42,11 +42,13 @@ const startTournaments = async () => {
   const currentDateTime = new Date()
   void jobs.forEach((job) => {
     if (job.tournament.startDate <= currentDateTime) {
-      void startTournament(job.tournamentId).then(() => {
+      startTournament(job.tournamentId).then(() => {
         void prisma.tournamentJob.delete({
           where: {
             id: job.id
           }
+        }).then(() => {
+          console.log('deleted tournament job')
         })
       })
     }
@@ -54,6 +56,7 @@ const startTournaments = async () => {
 }
 
 export const register = () => {
+  void startTournaments()
   setInterval(() => {
     void startTournaments()
   }, 1000 * 60 * 60)
