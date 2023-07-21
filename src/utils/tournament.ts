@@ -1,3 +1,4 @@
+import { MarkerType } from "reactflow";
 
 type PlayerType = {
   id: string;
@@ -221,4 +222,67 @@ export const calculateNewRatings = (player1Rating: number, player2Rating: number
     player1RatingChange,
     player2RatingChange,
   }
+}
+
+type coordinate = {
+  x: number
+  y: number
+}
+
+interface stage {
+  level: number
+  players: string[]
+}
+
+interface extendedStage extends stage {
+  x: number
+  y: number
+  id: string
+}
+
+
+export const scheduleMultiStageGames = (players: { id: string, name: string }[]) => {
+  if (players.length > 8) {
+
+  }
+}
+
+
+export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinate, stages: { [key: number]: stage }) => {
+  let lastStage = 0
+  const nodes: extendedStage[] = []
+  const edges: { id: string, source: string, target: string, type: string, markerEnd?: { type: MarkerType } }[] = []
+  const stagesArray = Object.values(stages)
+  let x = topLeft.x
+  let sourceNode = 0
+  let id = 0
+
+  stagesArray.forEach(s => {
+    if (s.level > lastStage) {
+      lastStage = s.level
+    }
+  })
+
+  const xdiff = (botRight.x - topLeft.x) / (lastStage + 1)
+  const level0NodesLen = stagesArray.filter(s => s.level == 0).length
+  const yIncrement = (botRight.y - topLeft.y) / level0NodesLen
+
+  for (let i = 0; i < lastStage + 1; i++) {
+    const levelNodes = stagesArray.filter(s => s.level == i)
+    const ydiff = (botRight.y - topLeft.y) / levelNodes.length
+    let y = topLeft.y + i * yIncrement - (i > 0 ? yIncrement / 2 : 0)
+
+    levelNodes.forEach(s => {
+      nodes.push({ ...s, x, y, id: `${id}` })
+      if (i > 0) {
+        edges.push({ id: `edge-${sourceNode}`, source: `${sourceNode}`, target: `${id}`, type: 'smoothstep', markerEnd: { type: MarkerType.Arrow } })
+        edges.push({ id: `edge-${sourceNode + 1}`, source: `${sourceNode + 1}`, target: `${id}`, type: 'smoothstep', markerEnd: { type: MarkerType.Arrow } })
+        sourceNode += 2
+      }
+      id++
+      y += ydiff
+    })
+    x += xdiff
+  }
+  return { nodes, edges }
 }
