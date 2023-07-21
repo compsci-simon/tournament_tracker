@@ -49,8 +49,8 @@ const startTournaments = async () => {
           }
         }).then(() => {
           console.log('deleted tournament job')
-        })
-      })
+        }).catch(err => console.error(err))
+      }).catch(err => console.error(err))
     }
   })
 }
