@@ -77,10 +77,12 @@ export default function Page() {
     const user = users?.filter(u => u.email === session.user.email)[0]
     setSelectedUser(user)
   }, [session])
+
   const fuse = new Fuse(users, {
     keys: ['name']
   })
-  const usersToShow = search && users ? fuse.search(search).map(u => u.item) : users
+
+  const usersToShow = search && users ? fuse.search(search).map(u => u.item) : (users ?? [])
 
   return <Box height='100%' padding={2}>
     <Stack className="h-100" direction='row' spacing={2}>
