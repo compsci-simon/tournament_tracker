@@ -1,19 +1,27 @@
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { Handle, Position } from "reactflow";
 
 const style = {
   backgroundColor: 'white',
   border: '1px solid black',
   borderRadius: '10px',
-  color: 'black'
+  color: 'black',
+  minWidth: '130px'
 }
 
-function GroupStageNode({ data }) {
+type nodeProps = {
+  id: string,
+  data: {
+    label: string[]
+  }
+}
+
+function GroupStageNode(props: nodeProps) {
   return (
     <>
-      <Handle type='target' position={Position.Right} />
+      <Handle type='source' position={Position.Right} style={{ opacity: 0 }} />
       <Box padding={3} sx={style}>
-        <label>test</label>
+        {props.data.label.map(label => (<Typography key={label}>{label}</Typography>))}
       </Box>
     </>
   )
