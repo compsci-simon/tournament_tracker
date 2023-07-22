@@ -91,7 +91,8 @@ export default function AddTournament({ handleSubmit, handleCancel }: AddTournam
             name: tournamentName,
             emailReminders,
             startDate: startDate?.toDate() ?? new Date(),
-            roundInterval
+            roundInterval,
+            tournamentType
           })
           handleSubmit()
         }}
