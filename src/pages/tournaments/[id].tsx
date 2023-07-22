@@ -1,4 +1,4 @@
-import { Box, Button, Collapse, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Collapse, Container, Divider, List, ListItem, ListItemButton, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import { api } from "~/utils/api";
 import { RouterOutputs } from "~/server/api/trpc"
@@ -11,8 +11,12 @@ import { graphSx } from "~/utils/constants";
 import { ThemeContext } from "../_app";
 import { useSession } from "next-auth/react";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
+import TabPanel from "~/components/TabPanel";
+import { ElementType, groupItemsByKey, itemAttributeVariants } from "~/utils/utils";
 
 type TournamentType = RouterOutputs['tournament']['getTournament']
+type GameType = ElementType<TournamentType['games']>
+
 type GameSubsetType = {
   id: string
   round: number
@@ -22,6 +26,17 @@ type GameSubsetType = {
   winner: string
 }
 
+type RenderTablesProps = {
+  tournament: TournamentType,
+  setModalState: Dispatch<SetStateAction<boolean>>,
+  setSelectedGame: Dispatch<SetStateAction<string | undefined>>,
+  dark: boolean,
+  userEmail: string
+}
+
+type ViewPropsType = {
+  tournament: TournamentType
+}
 
 const style = {
   position: 'absolute',
@@ -76,14 +91,6 @@ const columns: (
       }
     ];
   }
-
-type RenderTablesProps = {
-  tournament: TournamentType,
-  setModalState: Dispatch<SetStateAction<boolean>>,
-  setSelectedGame: Dispatch<SetStateAction<string | undefined>>,
-  dark: boolean,
-  userEmail: string
-}
 
 const RenderTables = (
   {
@@ -176,9 +183,7 @@ const RenderTables = (
   </Stack>
 }
 
-export default function TournamentView() {
-  const router = useRouter()
-  const { query } = router
+function GroupView({ tournament }: ViewPropsType) {
   const [modalState, setModalState] = useState(false)
   const [selectedGame, setSelectedGame] = useState<string | undefined>()
   const [player1Points, setPlayer1Points] = useState(0)
@@ -196,14 +201,10 @@ export default function TournamentView() {
     setPlayer2Points(0)
     updatePointsMutation({ gameId: selectedGame ?? '', player1Points: 0, player2Points: 0 })
   }
-  const tournamentId = query.id ? Array.isArray(query.id) ? query.id[0] : query.id : ''
-  const { data: tournamentData } = api.tournament.getTournament.useQuery({
-    id: tournamentId
-  })
   const { data: tournamentLeaders } = api.tournament.tournamentLeaders.useQuery({
-    id: tournamentId
+    id: tournament.id
   })
-  const selectedGameData = tournamentData?.games.filter(game => game.id == selectedGame)[0]
+  const selectedGameData = tournament?.games.filter(game => game.id == selectedGame)[0]
 
   useEffect(() => {
     setPlayer1Points(selectedGameData?.player1Points ?? -1)
@@ -278,8 +279,8 @@ export default function TournamentView() {
           </Stack>
         </Box>
       </Paper>
-      {tournamentData ? <RenderTables
-        tournament={tournamentData}
+      {tournament ? <RenderTables
+        tournament={tournament}
         setModalState={setModalState}
         setSelectedGame={setSelectedGame}
         dark={dark}
@@ -287,6 +288,97 @@ export default function TournamentView() {
       /> : null}
     </Stack>
   </Box>
+}
+
+function GroupStageTables({ tournament, games }: { tournament: TournamentType, games: GameType[] }) {
+  const groups = groupItemsByKey<GameType>(games, 'group')
+  const keys = Object.keys(groups)
+
+  return <Box>
+    {keys.map(key => {
+      const playersIds2d = groups[key].map(game => {
+        return [game.player1Id, game.player2Id]
+      })
+      const playerIds = playersIds2d.reduce((acc, current) => {
+        return acc.concat(current)
+      }, [] as string[]).filter(p => p)
+      const distinctPlayerIds = Array.from(new Set(playerIds))
+      return <Stack spacing={2}>
+        <h2>Group {key}</h2>
+        <List disablePadding>
+          <Divider />
+          {distinctPlayerIds.map((id, index) => {
+            const player = tournament.players?.filter(p => p.id == id)[0]
+            return <>
+              <ListItem disablePadding>
+                <ListItemButton>
+                  <Stack direction='row' spacing={1}>
+                    <Typography variant='h5'>{index + 1}</Typography>
+                    <Typography variant="h5">
+                      {player?.name}
+                    </Typography>
+                  </Stack>
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+            </>
+          })}
+        </List>
+      </Stack>
+    })}
+  </Box>
+}
+
+function MultiStageView({ tournament }: ViewPropsType) {
+
+  const groupGames = tournament.games.filter(game => game.type == 'group')
+  const knockoutGames = tournament.games.filter(game => game.type == 'knockout')
+
+  const tabs = [
+    {
+      title: 'Table',
+      content: <GroupStageTables tournament={tournament} games={groupGames} />
+    },
+    {
+      title: 'Knockout',
+      content: <div>
+        knockout
+      </div>
+    },
+    {
+      title: 'Stats',
+      content: <div>
+        stats
+      </div>
+    }
+  ]
+  return <Container maxWidth='md'>
+    <Box padding={2}>
+      <Paper>
+        <TabPanel
+          tabs={tabs}
+        />
+      </Paper>
+    </Box>
+  </Container>
+}
+
+export default function TournamentView() {
+  const router = useRouter()
+  const { query } = router
+  const tournamentId = query.id ? Array.isArray(query.id) ? query.id[0] : query.id : ''
+  const { data: tournament } = api.tournament.getTournament.useQuery({
+    id: tournamentId
+  })
+
+  if (tournament?.type == 'round-robbin') {
+    return <GroupView tournament={tournament} />
+  } else if (tournament?.type == 'multi-stage') {
+    return <MultiStageView tournament={tournament} />
+  } else {
+    return null
+  }
+
 }
 
 TournamentView.getLayout = function getLayout(page: React.ReactElement) {
