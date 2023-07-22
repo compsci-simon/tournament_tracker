@@ -2,9 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider        = "prisma-client-js"
-    previewFeatures = ["jsonProtocol"]
-    binaryTargets   = ["linux-musl-openssl-3.0.x", "native"]
+    provider      = "prisma-client-js"
+    binaryTargets = ["linux-musl-openssl-3.0.x", "native"]
 }
 
 datasource db {
@@ -94,13 +93,17 @@ model Game {
     players       User[]
     player1Points Int         @default(0)
     player2Points Int         @default(0)
-    player1Id     String
+    player1Id     String?
     player2Id     String?
+    type          String      @default("group")
+    level         Int?
+    group         String?
     ratings       Rating[]
 }
 
 model Tournament {
     id             String         @id @default(cuid())
+    type           String         @default("round-robbin")
     createdAt      DateTime       @default(now())
     startDate      DateTime
     roundInterval  String
