@@ -21,7 +21,8 @@ export const tournamentRouter = createTRPCRouter({
       name: z.string().min(1),
       startDate: z.date(),
       emailReminders: z.boolean(),
-      roundInterval: z.string().min(1)
+      roundInterval: z.string().min(1),
+      tournamentType: z.string()
     }))
     .mutation(async ({ ctx, input }) => {
       return await ctx.prisma.tournament.create({
@@ -31,6 +32,7 @@ export const tournamentRouter = createTRPCRouter({
           startDate: input.startDate,
           emailReminders: input.emailReminders,
           roundInterval: input.roundInterval,
+          type: input.tournamentType,
           TournamentJob: {
             create: {}
           }
@@ -50,9 +52,12 @@ export const tournamentRouter = createTRPCRouter({
               players: true
             }
           },
+          id: true,
           startDate: true,
           roundInterval: true,
-          numRounds: true
+          numRounds: true,
+          players: true,
+          type: true
         }
       })
     }),
