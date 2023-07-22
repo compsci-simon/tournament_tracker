@@ -240,12 +240,65 @@ interface extendedStage extends stage {
   id: string
 }
 
-
-export const scheduleMultiStageGames = (players: { id: string, name: string }[]) => {
-  if (players.length > 8) {
-
+const getGroupSize = (totalPlayers: number) => {
+  const groupSizes: { [key: number]: { ratio: number, groupSize: number } } = {}
+  for (let groupSize = 2; groupSize <= totalPlayers; groupSize++) {
+    const numGroups = Math.ceil(totalPlayers / groupSize)
+    const avgPlayers = totalPlayers * 1.0 / numGroups
+    const remainder = totalPlayers % groupSize
+    let variance = Math.pow(groupSize - avgPlayers, 2) * numGroups + (remainder != 0 ? Math.pow(remainder - avgPlayers, 2) : 0)
+    groupSizes[groupSize] = {
+      groupSize,
+      ratio: 2 * variance + Math.pow(groupSize - 4, 2) + Math.min(0, groupSize - 4) * -2
+    }
   }
+  const sizes = Object.values(groupSizes).sort((a, b) => a.ratio - b.ratio)
+  return sizes[0].groupSize ?? 4
 }
+
+function closestPowerOf2LessThan(number: number) {
+  let powerOf2 = 1;
+
+  while (powerOf2 * 2 < number) {
+    powerOf2 *= 2;
+  }
+
+  return powerOf2;
+}
+
+export const scheduleMultiStageGames = (players: string[]) => {
+  const matches: { type: string, group?: string, level?: number, player1?: string, player2?: string, round: number }[] = []
+  const totalPlayers = players.length
+  const groupSize = getGroupSize(totalPlayers)
+  const baseGroup = 'A'
+
+  for (let group = 0; group < Math.ceil(totalPlayers * 1.0 / groupSize); group++) {
+    const roundPlayers = players.slice(4 * group, 4 * (group + 1))
+    const { schedule } = roundRobinScheduleGames(roundPlayers)
+    schedule.forEach(game => {
+      matches.push({
+        type: 'group',
+        group: String.fromCharCode(baseGroup.charCodeAt(0) + group),
+        player1: game.player1,
+        player2: game.player2,
+        round: game.round
+      })
+    })
+  }
+
+  const numPlayersThatProgress = closestPowerOf2LessThan(totalPlayers)
+
+  for (let i = numPlayersThatProgress, level = 0; i > 1; i /= 2, level++) {
+    for (let j = 0; j < i / 2; j++) {
+      matches.push({ type: 'knockout', level, round: groupSize + level })
+    }
+  }
+
+  const numRounds = groupSize - 1 + Math.log2(numPlayersThatProgress) - 1
+
+  return { gameSchedule: matches, numRounds }
+}
+
 
 
 export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinate, stages: { [key: number]: stage }) => {
