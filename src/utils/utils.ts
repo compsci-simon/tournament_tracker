@@ -1,5 +1,7 @@
 import { Rating } from "@prisma/client"
 
+export type ElementType<T> = T extends Array<infer U> ? U : never;
+
 export const findStreakFromRatings = (ratings: Rating[]) => {
 
   let streak = 0
@@ -17,4 +19,15 @@ export const findStreakFromRatings = (ratings: Rating[]) => {
     }
   }
   return streak
+}
+
+export function groupItemsByKey<Item>(items: Item[], key: string): Record<string, Item[]> {
+  /* This function is used to group an array of objects by a particular object attribute */
+  return items.reduce((acc, item) => {
+    if (!acc[item[key]]) {
+      acc[item[key]] = [];
+    }
+    acc[item[key]].push(item);
+    return acc;
+  }, {} as Record<string, Item[]>);
 }
