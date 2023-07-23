@@ -8,11 +8,14 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import Layout from "~/components/Layout";
 import { graphSx } from "~/utils/constants";
-import { ThemeContext } from "../_app";
+import { ThemeContext } from "../../_app";
 import { useSession } from "next-auth/react";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import TabPanel from "~/components/TabPanel";
-import { ElementType, groupItemsByKey, itemAttributeVariants } from "~/utils/utils";
+import { ElementType, groupItemsByKey } from "~/utils/utils";
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
 
 type TournamentType = RouterOutputs['tournament']['getTournament']
 type GameType = ElementType<TournamentType['games']>
@@ -293,39 +296,57 @@ function GroupView({ tournament }: ViewPropsType) {
 function GroupStageTables({ tournament, games }: { tournament: TournamentType, games: GameType[] }) {
   const groups = groupItemsByKey<GameType>(games, 'group')
   const keys = Object.keys(groups)
+  const router = useRouter()
 
   return <Box>
-    {keys.map(key => {
-      const playersIds2d = groups[key].map(game => {
-        return [game.player1Id, game.player2Id]
-      })
-      const playerIds = playersIds2d.reduce((acc, current) => {
-        return acc.concat(current)
-      }, [] as string[]).filter(p => p)
-      const distinctPlayerIds = Array.from(new Set(playerIds))
-      return <Stack spacing={2}>
-        <h2>Group {key}</h2>
-        <List disablePadding>
-          <Divider />
-          {distinctPlayerIds.map((id, index) => {
-            const player = tournament.players?.filter(p => p.id == id)[0]
-            return <>
-              <ListItem disablePadding>
-                <ListItemButton>
-                  <Stack direction='row' spacing={1}>
-                    <Typography variant='h5'>{index + 1}</Typography>
-                    <Typography variant="h5">
-                      {player?.name}
-                    </Typography>
-                  </Stack>
-                </ListItemButton>
-              </ListItem>
-              <Divider />
-            </>
-          })}
-        </List>
-      </Stack>
-    })}
+    <Stack spacing={3}>
+      {keys.map(key => {
+        const playersIds2d = groups[key].map(game => {
+          return [game.player1Id, game.player2Id]
+        })
+        const playerIds = playersIds2d.reduce((acc, current) => {
+          return acc.concat(current)
+        }, [] as string[]).filter(p => p)
+        const distinctPlayerIds = Array.from(new Set(playerIds))
+
+        return <Stack key={key} spacing={1}>
+          <h2>Group {key}</h2>
+          <List disablePadding>
+            <Divider />
+            {distinctPlayerIds.map((id, index) => {
+              const player = tournament.players?.filter(p => p.id == id)[0]
+              const playerGames = tournament.games.filter(g => g.player1Id == id || g.player2Id == id)
+
+              return <Box key={id}>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      router.push(`/tournaments/${tournament.id}/${id}`)
+                    }}
+                  >
+                    <Stack direction='row' sx={{ width: '100%' }} justifyContent='space-between'>
+                      <Stack direction='row' spacing={2}>
+                        <Typography variant='h5'>{index + 1}</Typography>
+                        <Typography variant="h5">
+                          {player?.name}
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction='row' alignItems='center' spacing={1}>
+                        {playerGames.map(game => {
+                          return <PanoramaFishEyeIcon key={game.id} sx={{ color: '#D3D3D3' }} />
+                        })}
+                      </Stack>
+                    </Stack>
+                  </ListItemButton>
+                </ListItem>
+                <Divider />
+              </Box>
+            })}
+          </List>
+        </Stack>
+      })}
+    </Stack>
   </Box>
 }
 
