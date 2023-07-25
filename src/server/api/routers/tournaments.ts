@@ -61,6 +61,46 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
     }),
+  getTournamentPlayerGroupGames: protectedProcedure
+    .input(z.object({ tournamentId: z.string(), playerId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const games = await ctx.prisma.game.findMany({
+        where: {
+          tournamentId: input.tournamentId,
+          type: 'group',
+          OR: [
+            { player1Id: input.playerId },
+            { player2Id: input.playerId }
+          ]
+        },
+        select: {
+          players: {
+            select: {
+              name: true,
+              id: true
+            }
+          },
+          id: true,
+          player1Points: true,
+          player2Points: true,
+          player1Id: true,
+          player2Id: true,
+          Tournament: {
+            select: {
+              name: true
+            }
+          }
+        }
+      })
+
+      const tournament = await ctx.prisma.tournament.findFirst({
+        where: {
+          id: input.tournamentId
+        }
+      })
+
+      return games
+    }),
   joinTournament: protectedProcedure
     .input(z.object({
       tournamentId: z.string().min(1)
