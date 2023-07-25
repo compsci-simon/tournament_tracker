@@ -36,10 +36,11 @@ const kFactor = 25
 
 export const roundRobinScheduleGames: (players: string[]) => { schedule: GameScheduleType[], numRounds: number } = (players) => {
   players = shuffleArray(players)
-  const gameSchedule: GameScheduleType[] = []
+  if (players.length % 2 != 0) {
+    players.push('')
+  }
   const n = players.length
-  const evenNumberOfPlayers = (n % 2) == 0
-  const x = evenNumberOfPlayers ? 1 : 2
+  const gameSchedule: GameScheduleType[] = []
 
   const rounds = (n - 1)
   for (let i = 0; i < rounds; i++) {
@@ -50,18 +51,30 @@ export const roundRobinScheduleGames: (players: string[]) => { schedule: GameSch
       gameSchedule.push({
         round: i,
         player1: players[j],
-        player2: players[n - j - x]
-      })
-    }
-    if (!evenNumberOfPlayers) {
-      gameSchedule.push({
-        round: i,
-        player1: players[n - 1],
-        player2: undefined
+        player2: players[n - j - 1]
       })
     }
   }
-  return { schedule: gameSchedule, numRounds: rounds }
+
+  return {
+    schedule: gameSchedule.map(game => {
+      if (game.player1 == '') {
+        return {
+          ...game,
+          player1: game.player2,
+          player2: undefined
+        }
+      } else if (game.player2 == '') {
+        return {
+          ...game,
+          player2: undefined
+        }
+      } else {
+        return game
+      }
+    }),
+    numRounds: rounds
+  }
 }
 
 function shuffleArray(array: string[]) {
