@@ -49,7 +49,8 @@ export const tournamentRouter = createTRPCRouter({
         select: {
           games: {
             include: {
-              players: true
+              player1: true,
+              player2: true,
             }
           },
           id: true,
@@ -64,7 +65,7 @@ export const tournamentRouter = createTRPCRouter({
   getTournamentPlayerGroupGames: protectedProcedure
     .input(z.object({ tournamentId: z.string(), playerId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const games = await ctx.prisma.game.findMany({
+      return await ctx.prisma.game.findMany({
         where: {
           tournamentId: input.tournamentId,
           type: 'group',
@@ -73,18 +74,19 @@ export const tournamentRouter = createTRPCRouter({
             { player2Id: input.playerId }
           ]
         },
-        select: {
-          players: {
+        include: {
+          player1: {
             select: {
               name: true,
               id: true
             }
           },
-          id: true,
-          player1Points: true,
-          player2Points: true,
-          player1Id: true,
-          player2Id: true,
+          player2: {
+            select: {
+              name: true,
+              id: true
+            }
+          },
           Tournament: {
             select: {
               name: true
@@ -92,14 +94,6 @@ export const tournamentRouter = createTRPCRouter({
           }
         }
       })
-
-      const tournament = await ctx.prisma.tournament.findFirst({
-        where: {
-          id: input.tournamentId
-        }
-      })
-
-      return games
     }),
   joinTournament: protectedProcedure
     .input(z.object({
@@ -173,11 +167,12 @@ export const tournamentRouter = createTRPCRouter({
           id: input.gameId
         },
         include: {
-          players: true
+          player1: true,
+          player2: true,
         }
       })
-      const player1 = game?.players[0]
-      const player2 = game?.players[1]
+      const player1 = game?.player1
+      const player2 = game?.player2
       if (!(player1 && player2)) {
         return
       }
@@ -253,7 +248,8 @@ export const tournamentRouter = createTRPCRouter({
     .query(async ({ ctx }) => {
       const games = await ctx.prisma.game.findMany({
         include: {
-          players: true
+          player1: true,
+          player2: true,
         }
       })
       const numPlayers = (await ctx.prisma.user.findMany()).length
@@ -270,6 +266,13 @@ export const tournamentRouter = createTRPCRouter({
           player: true
         }
       })
+
+      const x = await ctx.prisma.user.findMany({
+        include: {
+          _count: { select: { userGames: true } }
+        },
+      })
+      console.log(x)
 
       return {
         numGames: numPlayedGames(games),
@@ -291,7 +294,8 @@ export const tournamentRouter = createTRPCRouter({
       })
       const allGames = await ctx.prisma.game.findMany({
         include: {
-          players: true
+          player1: true,
+          player2: true,
         }
       })
       return tournaments.map(tournament => {
@@ -301,41 +305,41 @@ export const tournamentRouter = createTRPCRouter({
           labels.push(`Round ${i}`)
         }
 
-        const datasets = tournament.players.map((player, index) => {
-          const playerTournamentGames = tournamentGames
-            .filter(game => {
-              return game.players.map(player => player.id).includes(player.id)
-            })
-            .sort((a, b) => (a.round ?? 0) - (b.round ?? 0))
-          const wins: number[] = [0]
-          let totalWins = 0
-          playerTournamentGames.forEach(game => {
-            const playerIndex = game.players.map(p => p.id).indexOf(player.id)
-            if (playerIndex == 0 && game.player1Points > game.player2Points) {
-              totalWins += 1
-            } else if (playerIndex == 1 && game.player2Points > game.player1Points) {
-              totalWins += 1
-            } else if (playerIndex == -1 || playerIndex > 1) {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: `Index of player in game\'s player attribute is not an elements of [0, 1]: ${playerIndex}`
-              })
-            }
-            wins.push(totalWins)
-          })
-          return {
-            label: player.name,
-            data: wins,
-            borderColor: colors[index]?.borderColor ?? defaultBorderColor,
-            backgroundColor: colors[index]?.backgroundColor ?? defaultBackgroundColor,
-          }
-        })
+        // const datasets = tournament.players.map((player, index) => {
+        //   const playerTournamentGames = tournamentGames
+        //     .filter(game => {
+        //       return game.players.map(player => player.id).includes(player.id)
+        //     })
+        //     .sort((a, b) => (a.round ?? 0) - (b.round ?? 0))
+        //   const wins: number[] = [0]
+        //   let totalWins = 0
+        //   playerTournamentGames.forEach(game => {
+        //     const playerIndex = game.players.map(p => p.id).indexOf(player.id)
+        //     if (playerIndex == 0 && game.player1Points > game.player2Points) {
+        //       totalWins += 1
+        //     } else if (playerIndex == 1 && game.player2Points > game.player1Points) {
+        //       totalWins += 1
+        //     } else if (playerIndex == -1 || playerIndex > 1) {
+        //       throw new TRPCError({
+        //         code: 'INTERNAL_SERVER_ERROR',
+        //         message: `Index of player in game\'s player attribute is not an elements of [0, 1]: ${playerIndex}`
+        //       })
+        //     }
+        //     wins.push(totalWins)
+        //   })
+        //   return {
+        //     label: player.name,
+        //     data: wins,
+        //     borderColor: colors[index]?.borderColor ?? defaultBorderColor,
+        //     backgroundColor: colors[index]?.backgroundColor ?? defaultBackgroundColor,
+        //   }
+        // })
 
         return {
           ...tournament,
           chartData: {
             labels,
-            datasets
+            datasets: []
           }
         }
       })
@@ -348,7 +352,8 @@ export const tournamentRouter = createTRPCRouter({
           tournamentId: input.id
         },
         include: {
-          players: true
+          player1: true,
+          player2: true,
         }
       })
       if (!games) {
@@ -356,12 +361,12 @@ export const tournamentRouter = createTRPCRouter({
       }
       const playerScoresMap: { [key: string]: { name: string, score: number } } = {}
       games.forEach(game => {
-        if (game.players.length == 2
+        if (game.player1 && game.player2
           && (game.player1Points != 0 || game.player2Points != 0)) {
 
-          let player = game.players[0]!
+          let player = game.player1
           if (game.player1Points < game.player2Points) {
-            player = game.players[1]!
+            player = game.player2
           }
           if (player.id in playerScoresMap) {
             playerScoresMap[player.id]!.score += 1

@@ -23,7 +23,8 @@ type RatingType = {
 type GameType = {
   player1Points: number
   player2Points: number
-  players: PlayerType[]
+  player1: PlayerType
+  player2: PlayerType
 }
 
 type GameScheduleType = {
@@ -184,12 +185,11 @@ export const mostGamesUser = (players: PlayerType[], games: GameType[]) => {
     }
   })
   games.forEach(game => {
-    if (game.players.length == 2
+    if (game.player1
       && (game.player1Points > 0 || game.player2Points > 0)) {
 
-      game.players.forEach(player => {
-        totalGames[player.id]!.totalGames += 1
-      })
+      totalGames[game.player1.id].totalGames += 1
+      totalGames[game.player2.id].totalGames += 1
     }
   })
 

@@ -6,9 +6,29 @@ export const gamesRouter = createTRPCRouter({
   getAll: publicProcedure
     .query(({ ctx }) => {
       return ctx.prisma.game.findMany({
-        include: {
-          players: true,
-          ratings: true
+        select: {
+          id: true,
+          time: true,
+          player1: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          player2: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          ratings: {
+            select: {
+              ratingChange: true,
+              userId: true
+            }
+          },
+          player1Points: true,
+          player2Points: true,
         },
         where: {
           OR: [
@@ -34,7 +54,7 @@ export const gamesRouter = createTRPCRouter({
         return
       }
       if (player1Score == 0 && player2Score == 0) {
-        return;
+        return
       }
       const player1 = await ctx.prisma.user.findFirst({
         where: {
@@ -77,10 +97,21 @@ export const gamesRouter = createTRPCRouter({
         data: {
           player1Points: input.player1Score,
           player2Points: input.player2Score,
-          player1Id,
-          player2Id,
-          players: {
-            connect: [({ id: player1Id }), ({ id: player2Id })]
+          player1: {
+            connect: {
+              id: player1Id
+            }
+          },
+          player2: {
+            connect: {
+              id: player2Id
+            }
+          },
+          userGame: {
+            create: [
+              ({ userId: player1Id }),
+              ({ userId: player2Id })
+            ]
           },
           ratings: {
             create: [

@@ -4,8 +4,6 @@ import { api } from "~/utils/api";
 import { RouterOutputs } from "~/server/api/trpc"
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
-import ReplayIcon from '@mui/icons-material/Replay';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import Layout from "~/components/Layout";
 import { graphSx } from "~/utils/constants";
 import { ThemeContext } from "../../_app";
@@ -13,9 +11,13 @@ import { useSession } from "next-auth/react";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import TabPanel from "~/components/TabPanel";
 import { ElementType, groupItemsByKey } from "~/utils/utils";
+
+import ReplayIcon from '@mui/icons-material/Replay';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
+import Image from "next/image";
 
 type TournamentType = RouterOutputs['tournament']['getTournament']
 type GameType = ElementType<TournamentType['games']>
@@ -51,7 +53,7 @@ const style = {
   border: '2px solid #000',
   boxShadow: 24,
   p: 4,
-};
+}
 
 const columns: (
   setModalState: Dispatch<SetStateAction<boolean>>,
@@ -325,8 +327,9 @@ function GroupStageTables({ tournament, games }: { tournament: TournamentType, g
                     }}
                   >
                     <Stack direction='row' sx={{ width: '100%' }} justifyContent='space-between'>
-                      <Stack direction='row' spacing={2}>
+                      <Stack direction='row' spacing={2} alignItems='center'>
                         <Typography variant='h5'>{index + 1}</Typography>
+                        <img height={30} width={30} src={player.avatar} alt='avatar' />
                         <Typography variant="h5">
                           {player?.name}
                         </Typography>
