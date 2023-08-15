@@ -49,7 +49,9 @@ model User {
     role          String       @default("player")
     gender        String
     tournaments   Tournament[]
-    games         Game[]
+    games1        Game[]       @relation("player1")
+    games2        Game[]       @relation("player2")
+    userGames     UserGame[]
     ratings       Rating[]
     trophies      Trophy[]
     accounts      Account[]
@@ -84,21 +86,32 @@ model Rating {
     ratingChange Float
 }
 
+model UserGame {
+    user   User   @relation(fields: [userId], references: [id])
+    userId String
+    game   Game   @relation(fields: [gameId], references: [id])
+    gameId String
+
+    @@id([userId, gameId])
+}
+
 model Game {
     id            String      @id @default(cuid())
     time          DateTime    @default(now())
     round         Int?
     Tournament    Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
     tournamentId  String?
-    players       User[]
     player1Points Int         @default(0)
     player2Points Int         @default(0)
-    player1Id     String?
-    player2Id     String?
+    player1Id     String
+    player1       User        @relation("player2", fields: [player1Id], references: [id])
+    player2Id     String
+    player2       User        @relation("player1", fields: [player2Id], references: [id])
     type          String      @default("group")
     level         Int?
     group         String?
     ratings       Rating[]
+    userGame      UserGame[]
 }
 
 model Tournament {
