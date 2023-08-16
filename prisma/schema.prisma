@@ -49,8 +49,8 @@ model User {
     role          String       @default("player")
     gender        String
     tournaments   Tournament[]
-    games1        Game[]       @relation("player1")
-    games2        Game[]       @relation("player2")
+    player1Games  Game[]       @relation("player1")
+    player2Games  Game[]       @relation("player2")
     userGames     UserGame[]
     ratings       Rating[]
     trophies      Trophy[]
@@ -103,10 +103,10 @@ model Game {
     tournamentId  String?
     player1Points Int         @default(0)
     player2Points Int         @default(0)
-    player1Id     String
-    player1       User        @relation("player2", fields: [player1Id], references: [id])
-    player2Id     String
-    player2       User        @relation("player1", fields: [player2Id], references: [id])
+    player1Id     String?
+    player1       User?       @relation("player1", fields: [player1Id], references: [id])
+    player2Id     String?
+    player2       User?       @relation("player2", fields: [player2Id], references: [id])
     type          String      @default("group")
     level         Int?
     group         String?
