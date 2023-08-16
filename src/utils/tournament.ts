@@ -29,13 +29,17 @@ type GameType = {
 
 type GameScheduleType = {
   round: number
-  player1?: string
-  player2?: string
+  player1Id: string
+  player2Id: string
 }
 
 const kFactor = 25
 
-export const roundRobinScheduleGames: (players: string[]) => { schedule: GameScheduleType[], numRounds: number } = (players) => {
+export const roundRobinScheduleGames: (players: string[]) => {
+  schedule: GameScheduleType[],
+  numRounds: number
+} = (players) => {
+
   players = shuffleArray(players)
   if (players.length % 2 != 0) {
     players.push('')
@@ -51,24 +55,19 @@ export const roundRobinScheduleGames: (players: string[]) => { schedule: GameSch
     for (let j = 0; j < rounds / 2; j++) {
       gameSchedule.push({
         round: i,
-        player1: players[j],
-        player2: players[n - j - 1]
+        player1Id: players[j],
+        player2Id: players[n - j - 1]
       })
     }
   }
 
   return {
     schedule: gameSchedule.map(game => {
-      if (game.player1 == '') {
+      if (game.player1Id == '') {
         return {
           ...game,
-          player1: game.player2,
-          player2: undefined
-        }
-      } else if (game.player2 == '') {
-        return {
-          ...game,
-          player2: undefined
+          player1Id: game.player2Id,
+          player2Id: ''
         }
       } else {
         return game
@@ -292,8 +291,8 @@ export const scheduleMultiStageGames = (players: string[]) => {
       matches.push({
         type: 'group',
         group: String.fromCharCode(baseGroup.charCodeAt(0) + group),
-        player1: game.player1,
-        player2: game.player2,
+        player1: game.player1Id,
+        player2: game.player2Id,
         round: game.round
       })
     })
