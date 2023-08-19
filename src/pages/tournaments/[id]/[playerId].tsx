@@ -1,7 +1,5 @@
 import { Box, Button, Container, Divider, Grid, List, ListItem, ListItemText, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
 import Layout from "~/components/Layout";
-import { prisma } from '../../../server/db'
-import { Game, User } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -22,7 +20,26 @@ export default function PlayerGroupGames() {
   const [player1Points, setPlayer1Points] = useState(0)
   const [player2Points, setPlayer2Points] = useState(0)
   const [selectedGame, setSelectedGame] = useState<GameType | null>(null)
-  const { mutate: updatePointsMutation } = api.tournament.setGamePoints.useMutation()
+  const utils = api.useContext();
+  const { mutate: updatePointsMutation } = api.tournament.setGamePoints.useMutation({
+    onSuccess(data, variables, context) {
+      utils.tournament.getTournamentPlayerGroupGames.setData({
+        tournamentId,
+        playerId
+      }, (oldData) => {
+        return oldData.map(game => {
+          if (game.id == data.id) {
+            return {
+              ...game,
+              player1Points: data.player1Points,
+              player2Points: data.player2Points,
+            }
+          }
+          return game
+        })
+      })
+    },
+  })
   const resetScores = () => {
     setPlayer1Points(0)
     setPlayer2Points(0)
@@ -31,6 +48,8 @@ export default function PlayerGroupGames() {
   const { data, isLoading } = api.tournament.getTournamentPlayerGroupGames.useQuery({
     tournamentId,
     playerId
+  }, {
+    enabled: tournamentId !== undefined
   })
 
   if (isLoading) {
@@ -46,7 +65,7 @@ export default function PlayerGroupGames() {
     >
       <Box sx={modalStyle}>
         <Stack spacing={2}>
-          <Typography>{selectedGame?.players?.filter(p => p.id == selectedGame.player1Id)[0]?.name ?? ''}</Typography>
+          <Typography>{selectedGame?.player1?.name}</Typography>
           <TextField
             label='Points'
             type='number'
@@ -57,7 +76,7 @@ export default function PlayerGroupGames() {
               }
             }}
           />
-          <Typography>{selectedGame?.players?.filter(p => p.id == selectedGame.player2Id)[0]?.name ?? ''}</Typography>
+          <Typography>{selectedGame?.player2?.name ?? ''}</Typography>
           <TextField
             label='Points'
             type='number'
@@ -114,10 +133,10 @@ export default function PlayerGroupGames() {
                 <ListItem>
                   <Grid container>
                     <Grid item xs={3}>
-                      <ListItemText>{game.players.filter(p => p.id == game.player1Id)[0]?.name}</ListItemText>
+                      <ListItemText>{game.player1?.name}</ListItemText>
                     </Grid>
                     <Grid item xs={3}>
-                      <ListItemText>{game.players.filter(p => p.id == game.player2Id)[0]?.name}</ListItemText>
+                      <ListItemText>{game.player2?.name}</ListItemText>
                     </Grid>
                     <Grid item xs={3}>
                       {game.player1Points}-{game.player2Points}
