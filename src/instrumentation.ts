@@ -34,7 +34,7 @@ const startTournament = async (tournamentId: string) => {
               }
               gameToReturn.userGame.create.push(({ userId: game.player1Id }))
             }
-            if (game.player2Id != '') {
+            if (game.player2Id) {
               gameToReturn.player2 = {
                 connect: {
                   id: game.player2Id
@@ -51,38 +51,43 @@ const startTournament = async (tournamentId: string) => {
   } else if (tournament.type == 'multi-stage') {
     const { gameSchedule, numRounds } = scheduleMultiStageGames(tournament.players.map(p => p.id))
 
-    // return await prisma.tournament.update({
-    //   where: {
-    //     id: tournamentId,
-    //   },
-    //   data: {
-    //     games: {
-    //       create: gameSchedule.map(game => {
-    //         return ({
-    //           players: {
-    //             connect: game.type == 'group' ?
-    //               (
-    //                 game.player2 ? [({ id: game.player1 }), ({ id: game.player2 })] : [({ id: game.player1 })]
-    //               )
-    //               : []
-    //           },
-    //           player1Id: game.player1 ?? '',
-    //           player2Id: game.player2 ?? '',
-    //           round: game.round,
-    //           type: game.type,
-    //           group: game.group,
-    //           userGame: {
-    //             create: [
-    //               ({ userId: game.player1 }),
-    //               ({ userId: game.player2 }),
-    //             ]
-    //           }
-    //         })
-    //       })
-    //     },
-    //     numRounds
-    //   }
-    // })
+    return await prisma.tournament.update({
+      where: {
+        id: tournamentId,
+      },
+      data: {
+        games: {
+          create: gameSchedule.map(game => {
+            const gameToReturn: { [key: string]: any } = {
+              userGame: {
+                create: []
+              },
+              group: game.group,
+              type: game.type,
+              round: game.round
+            }
+            if (game.player1Id) {
+              gameToReturn.player1 = {
+                connect: {
+                  id: game.player1Id
+                }
+              }
+              gameToReturn.userGame.create.push(({ userId: game.player1Id }))
+            }
+            if (game.player2Id) {
+              gameToReturn.player2 = {
+                connect: {
+                  id: game.player2Id
+                }
+              }
+              gameToReturn.userGame.create.push(({ userId: game.player2Id }))
+            }
+            return gameToReturn
+          })
+        },
+        numRounds
+      }
+    })
   } else {
     throw new Error(`Unknown tournament type: ${tournament.type}`);
   }
