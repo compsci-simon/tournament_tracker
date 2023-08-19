@@ -3,17 +3,10 @@ import { Handle, Position } from "reactflow";
 
 const style = {
   backgroundColor: 'white',
-  border: '1px solid black',
+  border: '1px solid gray',
   borderRadius: '10px',
   color: 'black',
   minWidth: '130px'
-}
-
-type nodeProps = {
-  id: string,
-  data: {
-    label: string[]
-  }
 }
 
 function GroupStageNode(props: nodeProps) {
@@ -21,7 +14,9 @@ function GroupStageNode(props: nodeProps) {
     <>
       <Handle type='source' position={Position.Right} style={{ opacity: 0 }} />
       <Box padding={3} sx={style}>
-        {props.data.label.map(label => (<Typography key={label}>{label}</Typography>))}
+        {props.data.date}
+        <Typography>{props.data.player1 ?? 'TBD'}</Typography>
+        <Typography>{props.data.player2 ?? 'TBD'}</Typography>
       </Box>
     </>
   )
