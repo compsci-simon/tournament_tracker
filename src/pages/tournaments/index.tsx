@@ -7,8 +7,27 @@ import { enqueueSnackbar } from 'notistack'
 import { useSession } from 'next-auth/react'
 import { useContext } from 'react'
 import { ThemeContext } from '../_app'
-import { options } from '~/utils/constants'
+import { graphSx } from '~/utils/constants'
+import { DataGrid, GridColDef } from '@mui/x-data-grid'
 
+
+const columns: GridColDef[] = [
+  {
+    field: 'player', headerName: 'Player', renderCell: (params: { row: { name: string } }) => {
+      return params.row.name
+    }
+  },
+  {
+    field: 'wins', headerName: 'Wins', renderCell: (params: { row: { wins: string } }) => {
+      return params.row.wins
+    }
+  },
+  {
+    field: 'losses', headerName: 'Losses', renderCell: (params: { row: { losses: string } }) => {
+      return params.row.losses
+    }
+  }
+]
 
 export default function TournamentsPage() {
   const utils = api.useContext()
@@ -118,11 +137,14 @@ export default function TournamentsPage() {
                 started ?
                   <>
                     <Box height={300}>
-                      {
-                        tournament.chartData ?
-                          <LineChart options={options(dark)} data={tournament.chartData} />
-                          : null
-                      }
+                      <DataGrid
+                        columns={columns}
+                        rows={tournament.players}
+                        disableRowSelectionOnClick
+                        pageSizeOptions={[5]}
+                        sx={graphSx(dark)}
+                        getRowId={(row) => row.email}
+                      />
                     </Box>
                     <Box>
                       <Button
