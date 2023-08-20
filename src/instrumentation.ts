@@ -64,7 +64,8 @@ const startTournament = async (tournamentId: string) => {
               },
               group: game.group,
               type: game.type,
-              round: game.round
+              round: game.round,
+              level: game.level
             }
             if (game.player1Id) {
               gameToReturn.player1 = {
