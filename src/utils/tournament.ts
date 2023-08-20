@@ -243,7 +243,8 @@ type coordinate = {
 
 interface stage {
   level: number
-  players: string[]
+  player1Id: string
+  player2Id: string
 }
 
 interface extendedStage extends stage {
@@ -279,7 +280,7 @@ function closestPowerOf2LessThan(number: number) {
 }
 
 export const scheduleMultiStageGames = (players: string[]) => {
-  const matches: { type: string, group?: string, level?: number, player1?: string, player2?: string, round: number }[] = []
+  const matches: { type: string, group?: string, level?: number, player1Id?: string, player2Id?: string, round: number }[] = []
   const totalPlayers = players.length
   const groupSize = getGroupSize(totalPlayers)
   const baseGroup = 'A'
@@ -291,8 +292,8 @@ export const scheduleMultiStageGames = (players: string[]) => {
       matches.push({
         type: 'group',
         group: String.fromCharCode(baseGroup.charCodeAt(0) + group),
-        player1: game.player1Id,
-        player2: game.player2Id,
+        player1Id: game.player1Id,
+        player2Id: game.player2Id,
         round: game.round
       })
     })
@@ -302,7 +303,7 @@ export const scheduleMultiStageGames = (players: string[]) => {
 
   for (let i = numPlayersThatProgress, level = 0; i > 1; i /= 2, level++) {
     for (let j = 0; j < i / 2; j++) {
-      matches.push({ type: 'knockout', level, round: groupSize + level })
+      matches.push({ type: 'knockout', level, round: groupSize + level, player1Id: null, player2Id: null })
     }
   }
 
@@ -311,13 +312,17 @@ export const scheduleMultiStageGames = (players: string[]) => {
   return { gameSchedule: matches, numRounds }
 }
 
-
-
 export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinate, stages: { [key: number]: stage }) => {
   let lastStage = 0
   const nodes: extendedStage[] = []
   const edges: { id: string, source: string, target: string, type: string, markerEnd?: { type: MarkerType } }[] = []
-  const stagesArray = Object.values(stages)
+  const stagesArray = Object.values(stages).map(s => {
+    return {
+      ...s,
+      type: s.level == 0 ? 'group' : 'knockout',
+      label: [s.player1Id]
+    }
+  })
   let x = topLeft.x
   let sourceNode = 0
   let id = 0
