@@ -17,7 +17,6 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
-import Image from "next/image";
 
 type TournamentType = RouterOutputs['tournament']['getTournament']
 type GameType = ElementType<TournamentType['games']>
@@ -25,9 +24,8 @@ type GameType = ElementType<TournamentType['games']>
 type GameSubsetType = {
   id: string
   round: number
-  player1: string
-  player2: string
-  players: { email: string }[]
+  player1: { name: string, email: string }
+  player2: { name: string, email: string }
   winner: string
 }
 
@@ -66,11 +64,17 @@ const columns: (
         field: 'player1',
         headerName: 'Player',
         width: 150,
+        renderCell(params) {
+          return params.row.player1?.name
+        },
       },
       {
         field: 'player2',
         headerName: 'Player',
         width: 150,
+        renderCell(params) {
+          return params.row.player2?.name
+        },
       },
       {
         field: 'winner',
@@ -80,7 +84,7 @@ const columns: (
       {
         field: 'selectWinner',
         headerName: 'Set Results',
-        renderCell(params: { row: { id: string, players: { email: string }[] } }) {
+        renderCell(params: { row: { id: string, player1: { email: string }, player2: { email: string } } }) {
           return <Button
             variant='outlined'
             onClick={() => {
@@ -88,7 +92,7 @@ const columns: (
               setSelectedGame(newGameSelection)
               setModalState(true)
             }}
-            disabled={!params.row.players.map(p => p.email).includes(userEmail)}
+            disabled={params.row.player1?.email != userEmail && params.row.player2?.email != userEmail}
           >
             Set
           </Button>
@@ -114,18 +118,17 @@ const RenderTables = (
   const games = tournament.games.map(game => {
     let winner = 'To be played'
     if (game.player1Points > game.player2Points) {
-      winner = game.players[0].name
+      winner = game.player1.name
     } else if (game.player1Points < game.player2Points) {
-      winner = game.players[1].name
+      winner = game.player2.name
     } else if (game.player1Points == game.player2Points && game.player1Points > 0) {
       winner = 'Draw'
     }
     return {
       id: game.id,
       round: game.round,
-      player1: game.players[0]?.name,
-      player2: game.players[1]?.name,
-      players: game.players,
+      player1: game.player1,
+      player2: game.player2,
       winner
     }
   })
@@ -188,7 +191,7 @@ const RenderTables = (
   </Stack>
 }
 
-function GroupView({ tournament }: ViewPropsType) {
+function RoundRobbinView({ tournament }: ViewPropsType) {
   const [modalState, setModalState] = useState(false)
   const [selectedGame, setSelectedGame] = useState<string | undefined>()
   const [player1Points, setPlayer1Points] = useState(0)
@@ -223,7 +226,7 @@ function GroupView({ tournament }: ViewPropsType) {
     >
       <Box sx={style}>
         <Stack spacing={2}>
-          <Typography>{selectedGameData?.players[0]?.name ?? ''}</Typography>
+          <Typography>{selectedGameData?.player1?.name ?? ''}</Typography>
           <TextField
             label='Points'
             type='number'
@@ -234,7 +237,7 @@ function GroupView({ tournament }: ViewPropsType) {
               }
             }}
           />
-          <Typography>{selectedGameData?.players[1]?.name ?? ''}</Typography>
+          <Typography>{selectedGameData?.player2?.name ?? ''}</Typography>
           <TextField
             label='Points'
             type='number'
@@ -337,7 +340,17 @@ function GroupStageTables({ tournament, games }: { tournament: TournamentType, g
 
                       <Stack direction='row' alignItems='center' spacing={1}>
                         {playerGames.map(game => {
-                          return <PanoramaFishEyeIcon key={game.id} sx={{ color: '#D3D3D3' }} />
+                          const won = (game.player1Id == id && game.player1Points > game.player2Points)
+                            || (game.player2Id == id && game.player2Points > game.player1Points)
+                          const lost = (game.player1Id == id && game.player1Points < game.player2Points)
+                            || (game.player2Id == id && game.player2Points < game.player1Points)
+                          if (won) {
+                            return <CheckCircleOutlineIcon key={game.id} sx={{ color: '#E4F1E4' }} />
+                          } else if (lost) {
+                            return <HighlightOffIcon key={game.id} sx={{ color: '#FDF2F2' }} />
+                          } else {
+                            return <PanoramaFishEyeIcon key={game.id} sx={{ color: '#D3D3D3' }} />
+                          }
                         })}
                       </Stack>
                     </Stack>
@@ -396,7 +409,7 @@ export default function TournamentView() {
   })
 
   if (tournament?.type == 'round-robbin') {
-    return <GroupView tournament={tournament} />
+    return <RoundRobbinView tournament={tournament} />
   } else if (tournament?.type == 'multi-stage') {
     return <MultiStageView tournament={tournament} />
   } else {
