@@ -1,30 +1,32 @@
 import { Box } from '@mui/material'
+import 'reactflow/dist/style.css';
 import React, { useMemo } from 'react'
-import ReactFlow from 'reactflow'
-import { calculatedNodePositions, scheduleMultiStageGames } from '~/utils/tournament'
+import ReactFlow, { MarkerType } from 'reactflow'
 import GroupStageNode from './GroupStageNode'
 import KnockoutNode from './KnockoutNode'
+import { RouterOutputs } from "~/server/api/trpc"
+import { calculatedNodePositions } from '~/utils/tournament';
+
+type GamesType = RouterOutputs['tournament']['getTournament']['games']
 
 const TOPLEFT = {
-  x: 100,
-  y: 100
+  x: 0,
+  y: 0
 }
 
 const BOTTOMRIGHT = {
-  x: 700,
-  y: 700
+  x: 600,
+  y: 600
 }
 
-const KnockoutTree = ({ players }: { players: { name: string }[] }) => {
-  const { gameSchedule } = scheduleMultiStageGames(players.map(p => p.name))
-  const schedule = gameSchedule.filter(m => m.type == 'knockout').reduce((acc, curr, index) => {
+const KnockoutTree = ({ games }: { games: GamesType }) => {
+  const nodeTypes = useMemo(() => ({ groupStageNode: GroupStageNode, knockoutNode: KnockoutNode }), []);
+  const { nodes, edges: initialEdges } = calculatedNodePositions(TOPLEFT, BOTTOMRIGHT, games.reduce((acc, curr, index) => {
     return {
       ...acc,
       [index]: curr
     }
-  }, {})
-  const nodeTypes = useMemo(() => ({ groupStageNode: GroupStageNode, knockoutNode: KnockoutNode }), []);
-  const { nodes, edges: initialEdges } = calculatedNodePositions(TOPLEFT, BOTTOMRIGHT, schedule)
+  }, {}))
 
   const initialNodes = nodes.map((stage, index) => {
     return {
@@ -35,25 +37,23 @@ const KnockoutTree = ({ players }: { players: { name: string }[] }) => {
     }
   })
 
-  return (
-    <Box padding={4} height='100%'>
-      <div style={{ width: '500px', height: '500px', border: '1px solid black', overflow: 'hidden' }}>
-        <div style={{ width: '500px', height: '520px' }}>
-          <ReactFlow
-            nodeOrigin={[0.5, 0.5]}
-            nodeTypes={nodeTypes}
-            nodes={initialNodes}
-            edges={initialEdges}
-            panOnDrag={false}
-            preventScrolling={true}
-            zoomOnScroll={false}
-            zoomOnDoubleClick={false}
-            fitView
-          />
-        </div>
+  return <Box padding={4} height='100%'>
+    <div style={{ width: '500px', height: '100%', border: '1px solid black', overflow: 'hidden' }}>
+      <div style={{ width: '500px', height: 'calc(100% + 20px)' }}>
+        <ReactFlow
+          nodeOrigin={[0.5, 0.5]}
+          nodeTypes={nodeTypes}
+          nodes={initialNodes}
+          edges={initialEdges}
+          panOnDrag={false}
+          preventScrolling={true}
+          zoomOnScroll={false}
+          zoomOnDoubleClick={false}
+          fitView
+        />
       </div>
-    </Box>
-  )
+    </div>
+  </Box>
 }
 
 export default KnockoutTree
