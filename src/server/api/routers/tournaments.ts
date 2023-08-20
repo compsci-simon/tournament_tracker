@@ -65,7 +65,7 @@ export const tournamentRouter = createTRPCRouter({
   getTournamentPlayerGroupGames: protectedProcedure
     .input(z.object({ tournamentId: z.string(), playerId: z.string() }))
     .query(async ({ ctx, input }) => {
-      return await ctx.prisma.game.findMany({
+      const x = await ctx.prisma.game.findMany({
         where: {
           tournamentId: input.tournamentId,
           type: 'group',
@@ -94,6 +94,7 @@ export const tournamentRouter = createTRPCRouter({
           }
         }
       })
+      return x
     }),
   joinTournament: protectedProcedure
     .input(z.object({
@@ -300,47 +301,29 @@ export const tournamentRouter = createTRPCRouter({
       })
       return tournaments.map(tournament => {
         const tournamentGames = allGames.filter(game => game.tournamentId == tournament.id)
-        const labels = ['']
-        for (let i = 0; i < tournament.numRounds; i++) {
-          labels.push(`Round ${i}`)
-        }
-
-        // const datasets = tournament.players.map((player, index) => {
-        //   const playerTournamentGames = tournamentGames
-        //     .filter(game => {
-        //       return game.players.map(player => player.id).includes(player.id)
-        //     })
-        //     .sort((a, b) => (a.round ?? 0) - (b.round ?? 0))
-        //   const wins: number[] = [0]
-        //   let totalWins = 0
-        //   playerTournamentGames.forEach(game => {
-        //     const playerIndex = game.players.map(p => p.id).indexOf(player.id)
-        //     if (playerIndex == 0 && game.player1Points > game.player2Points) {
-        //       totalWins += 1
-        //     } else if (playerIndex == 1 && game.player2Points > game.player1Points) {
-        //       totalWins += 1
-        //     } else if (playerIndex == -1 || playerIndex > 1) {
-        //       throw new TRPCError({
-        //         code: 'INTERNAL_SERVER_ERROR',
-        //         message: `Index of player in game\'s player attribute is not an elements of [0, 1]: ${playerIndex}`
-        //       })
-        //     }
-        //     wins.push(totalWins)
-        //   })
-        //   return {
-        //     label: player.name,
-        //     data: wins,
-        //     borderColor: colors[index]?.borderColor ?? defaultBorderColor,
-        //     backgroundColor: colors[index]?.backgroundColor ?? defaultBackgroundColor,
-        //   }
-        // })
-
+        const players = tournament.players.map(player => {
+          const playerGames = tournamentGames.filter(game => {
+            return game.player1Id == player.id || game.player2Id == player.id
+          })
+          const wins = playerGames.filter(game => {
+            return (game.player1Id == player.id && game.player1Points > game.player2Points)
+              || (game.player2Id == player.id && game.player2Points > game.player1Points)
+          }).length
+          const losses = playerGames.filter(game => {
+            return (game.player1Id == player.id && game.player1Points < game.player2Points)
+              || (game.player2Id == player.id && game.player2Points < game.player1Points)
+          }).length
+          return {
+            name: player.name,
+            email: player.email,
+            wins,
+            losses
+          }
+        })
+        console.log(players)
         return {
           ...tournament,
-          chartData: {
-            labels,
-            datasets: []
-          }
+          players
         }
       })
     }),
