@@ -140,3 +140,11 @@ export const modalStyle = {
   boxShadow: 24,
   p: 4,
 }
+
+export const NODESTYLE: React.CSSProperties = {
+  backgroundColor: 'white',
+  border: '1px solid black',
+  borderRadius: '10px',
+  color: 'black',
+  minWidth: '130px',
+}
