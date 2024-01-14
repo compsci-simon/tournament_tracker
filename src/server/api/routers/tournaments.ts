@@ -2,10 +2,6 @@ import { TRPCError } from "@trpc/server"
 import { z } from "zod"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
 import { calculateNewRatings, getLeadersFromList, mostGamesUser, numPlayedGames, playerRankingHistories, weeksBiggestGainer } from "~/utils/tournament"
-import { colors } from "~/utils/constants"
-
-const defaultBorderColor = 'rgb(255, 99, 132)'
-const defaultBackgroundColor = 'rgba(255, 99, 132, 0.5)'
 
 export const tournamentRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -50,7 +46,7 @@ export const tournamentRouter = createTRPCRouter({
           games: {
             include: {
               player1: true,
-              player2: true,
+              player2: true
             }
           },
           id: true,
@@ -362,5 +358,102 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
       return getLeadersFromList(Object.values(playerScoresMap))
+    }),
+  progressToNextKnockoutRound: protectedProcedure
+    .input(z.object({ tournamentId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const games = await ctx.prisma.game.findMany({
+        where: {
+          tournamentId: input.tournamentId
+        }
+      })
+      const sortedKnockoutGames = games
+        .filter(g => g.type == 'knockout')
+        .sort((a, b) => a.level - b.level)
+
+      const level = sortedKnockoutGames.find(g => !Boolean(g.player1Id))?.level
+      if (level === undefined) {
+        console.log('There are no more rounds to this tournament left.')
+        return
+      }
+      const numberOfPlayersToProgress = games.filter(g => g.level == level).length * 2
+      const playersThatProgress = []
+      if (level == 0) {
+        // Get the players that will progress from the group stages to the knockout stages
+        const playerIds = games.reduce((acc, game) => {
+          if (game.player1Id && !acc.includes(game.player1Id)) {
+            acc.push(game.player1Id)
+          }
+          if (game.player2Id && !acc.includes(game.player2Id)) {
+            acc.push(game.player2Id)
+          }
+          return acc
+        }, [] as string[])
+        const playerScores = playerIds
+          .reduce((acc, playerId) => {
+            const playerWins = games.filter(game => {
+              return (game.player1Id == playerId && game.player1Points > game.player2Points)
+                || (game.player2Id == playerId && game.player2Points > game.player1Points)
+            }).length
+            acc.push({ playerId, playerWins })
+            return acc
+          }, [] as { playerId: string, playerWins: number }[])
+          .sort((a, b) => b.playerWins - a.playerWins)
+
+        for (let i = 0; i < numberOfPlayersToProgress; i++) {
+          playersThatProgress.push(playerScores[i].playerId)
+        }
+      } else {
+        // Get the players that progress to the next round of the knockout stages
+        const playerIds = games.filter(game => game.level == level - 1).reduce((acc, game) => {
+          if (!acc.includes(game.player1Id)) {
+            acc.push(game.player1Id)
+          }
+          if (!acc.includes(game.player2Id)) {
+            acc.push(game.player2Id)
+          }
+          return acc
+        }, [] as string[])
+        const prevLevelGames = games.filter(game => game.level == level - 1)
+
+        const playerScores = playerIds
+          .reduce((acc, playerId) => {
+            const playerWins = prevLevelGames.filter(game => {
+              return (game.player1Id == playerId && game.player1Points > game.player2Points)
+                || (game.player2Id == playerId && game.player2Points > game.player1Points)
+            }).length
+            acc.push({ playerId, playerWins })
+            return acc
+          }, [] as { playerId: string, playerWins: number }[])
+          .sort((a, b) => a.playerWins - b.playerWins)
+
+        for (let i = 0; i < numberOfPlayersToProgress; i++) {
+          playersThatProgress.push(playerScores[i].playerId)
+        }
+      }
+      // Now that we have the players that are to continue, we need to set the player1 and player2
+      // ids on the games for the current level
+      const currentLevelGames = games.filter(game => game.level == level)
+      for (let i = 0; i < currentLevelGames.length; i++) {
+        const player1Id = playersThatProgress[i * 2]
+        const player2Id = playersThatProgress[i * 2 + 1]
+        await ctx.prisma.game.update({
+          where: {
+            id: currentLevelGames[i].id
+          },
+          data: {
+            player1: {
+              connect: {
+                id: player1Id
+              }
+            },
+            player2: {
+              connect: {
+                id: player2Id
+              }
+            }
+          }
+        })
+      }
     })
 })

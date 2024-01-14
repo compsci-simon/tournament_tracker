@@ -17,9 +17,9 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
+import KnockoutTree from "~/components/KnockoutTree";
+import { GameType, TournamentType } from "~/type";
 
-type TournamentType = RouterOutputs['tournament']['getTournament']
-type GameType = ElementType<TournamentType['games']>
 
 type GameSubsetType = {
   id: string
@@ -370,6 +370,7 @@ function MultiStageView({ tournament }: ViewPropsType) {
 
   const groupGames = tournament.games.filter(game => game.type == 'group')
   const knockoutGames = tournament.games.filter(game => game.type == 'knockout')
+  const [kGames, setKGames] = useState([])
 
   const tabs = [
     {
@@ -378,9 +379,9 @@ function MultiStageView({ tournament }: ViewPropsType) {
     },
     {
       title: 'Knockout',
-      content: <div>
-        knockout
-      </div>
+      content: <Box height={500} width={500}>
+        <KnockoutTree games={knockoutGames} />
+      </Box>
     },
     {
       title: 'Stats',
@@ -389,15 +390,28 @@ function MultiStageView({ tournament }: ViewPropsType) {
       </div>
     }
   ]
-  return <Container maxWidth='md'>
-    <Box padding={2}>
-      <Paper>
-        <TabPanel
-          tabs={tabs}
-        />
-      </Paper>
-    </Box>
-  </Container>
+
+  return (
+    <Container maxWidth='md'>
+      <Box padding={2}>
+        <Paper>
+          <TabPanel tabs={tabs} />
+          <Box p={4} >
+            <Button
+              variant='outlined'
+              onClick={() => setKGames(knockoutGames)}
+            >
+              Schedule stuff
+            </Button>
+            <br />
+            <pre>
+              {JSON.stringify(kGames, null, 2)}
+            </pre>
+          </Box>
+        </Paper>
+      </Box>
+    </Container>
+  )
 }
 
 export default function TournamentView() {

@@ -43,7 +43,7 @@ type TabProps = {
 }
 
 export default function BasicTabs({ tabs }: TabProps) {
-  const [value, setValue] = React.useState(0);
+  const [value, setValue] = React.useState(1);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
