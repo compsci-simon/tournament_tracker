@@ -370,7 +370,6 @@ function MultiStageView({ tournament }: ViewPropsType) {
 
   const groupGames = tournament.games.filter(game => game.type == 'group')
   const knockoutGames = tournament.games.filter(game => game.type == 'knockout')
-  const [kGames, setKGames] = useState([])
 
   const tabs = [
     {
@@ -379,16 +378,12 @@ function MultiStageView({ tournament }: ViewPropsType) {
     },
     {
       title: 'Knockout',
-      content: <Box height={500} width={500}>
-        <KnockoutTree games={knockoutGames} />
-      </Box>
+      content: (
+        <Box height={500} width={500}>
+          <KnockoutTree games={knockoutGames} />
+        </Box>
+      )
     },
-    {
-      title: 'Stats',
-      content: <div>
-        stats
-      </div>
-    }
   ]
 
   return (

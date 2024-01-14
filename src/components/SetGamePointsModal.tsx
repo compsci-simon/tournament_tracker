@@ -1,5 +1,13 @@
 import React from 'react'
-import { Box, Button, Modal, Stack, TextField, Typography } from '@mui/material'
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Modal,
+  Stack,
+  TextField,
+  Typography
+} from '@mui/material'
 import ReplayIcon from '@mui/icons-material/Replay';
 
 import { api } from '~/utils/api';
@@ -13,6 +21,7 @@ const SetGamePointsModal = ({
   setPlayer1Points,
   player2Points,
   setPlayer2Points,
+  onSuccess,
   game
 }: {
   open: boolean,
@@ -21,36 +30,18 @@ const SetGamePointsModal = ({
   setPlayer1Points: React.Dispatch<number>,
   player2Points: number,
   setPlayer2Points: React.Dispatch<number>,
+  onSuccess: (data, variables, context) => void
   game: GameType
 }) => {
-  const utils = api.useContext();
-  const { mutate: updatePointsMutation } = api.tournament.setGamePoints.useMutation({
-    onSuccess(data, variables, context) {
-      utils.tournament.getTournament.setData({
-        id: game.tournamentId,
-      }, (oldData) => {
-        console.log('data', data)
-        return {
-          ...oldData,
-          games: oldData.games.map(game => {
-            if (game.id == data.id) {
-              return {
-                ...game,
-                player1Points: data.player1Points,
-                player2Points: data.player2Points,
-                time: data.time
-              }
-            }
-            return game
-          })
-        }
-      })
-    },
-  })
+  const { mutate: updatePointsMutation, isLoading } = api.tournament.setGamePoints.useMutation({ onSuccess })
   const resetScores = () => {
     setPlayer1Points(0)
     setPlayer2Points(0)
     updatePointsMutation({ gameId: game?.id ?? '', player1Points: 0, player2Points: 0 })
+  }
+
+  if (isLoading) {
+    return <CircularProgress />
   }
 
   return (

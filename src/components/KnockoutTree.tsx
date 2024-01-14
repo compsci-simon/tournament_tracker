@@ -24,7 +24,7 @@ const KnockoutTree = ({ games }: { games: GameType[] }) => {
 
   return (
     <Box padding={4} height='100%'>
-      <div style={{ width: '700px', height: '100%', border: '1px solid black', overflow: 'hidden' }}>
+      <div style={{ width: '500px', height: '100%', border: '1px solid black', overflow: 'hidden' }}>
         <div style={{ width: '500px', height: 'calc(100% + 20px)' }}>
           <ReactFlow
             nodeOrigin={[0.5, 0.5]}

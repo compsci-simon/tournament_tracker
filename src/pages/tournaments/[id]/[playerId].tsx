@@ -10,6 +10,7 @@ import { RouterOutputs } from "~/server/api/trpc"
 import ReplayIcon from '@mui/icons-material/Replay';
 import { ElementType } from "~/utils/utils";
 import SetGamePointsModal from "~/components/SetGamePointsModal";
+import { Game } from "@prisma/client";
 
 type GameType = ElementType<RouterOutputs['tournament']['getTournamentPlayerGroupGames']>
 
@@ -21,7 +22,7 @@ export default function PlayerGroupGames() {
   const [player1Points, setPlayer1Points] = useState(0)
   const [player2Points, setPlayer2Points] = useState(0)
   const [selectedGame, setSelectedGame] = useState<GameType | null>(null)
-  const utils = api.useContext();
+  const utils = api.useContext()
 
   const { data, isLoading } = api.tournament.getTournamentPlayerGroupGames.useQuery({
     tournamentId,
@@ -33,6 +34,24 @@ export default function PlayerGroupGames() {
   if (isLoading) {
     return <div>Loading..</div>
   }
+  function onSuccess(data: Game, variables, context) {
+    utils.tournament.getTournamentPlayerGroupGames.setData({
+      tournamentId,
+      playerId
+    }, (oldData) => {
+      return oldData.map(game => {
+        if (game.id == data.id) {
+          return {
+            ...game,
+            player1Points: data.player1Points,
+            player2Points: data.player2Points,
+            time: data.time
+          }
+        }
+        return game
+      })
+    })
+  }
 
   return (
     <Container>
@@ -43,6 +62,7 @@ export default function PlayerGroupGames() {
         setPlayer1Points={setPlayer1Points}
         player2Points={player2Points}
         setPlayer2Points={setPlayer2Points}
+        onSuccess={onSuccess}
         game={selectedGame}
       />
       <Box padding={2}>
