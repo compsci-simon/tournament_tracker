@@ -1,4 +1,6 @@
-import { MarkerType } from "reactflow";
+import { MarkerType, Node } from "reactflow";
+import { RouterOutputs } from "~/server/api/trpc";
+import { GameType } from "~/type";
 
 type PlayerType = {
   id: string;
@@ -20,12 +22,7 @@ type RatingType = {
   }
 }
 
-type GameType = {
-  player1Points: number
-  player2Points: number
-  player1: PlayerType
-  player2: PlayerType
-}
+type GamesType = RouterOutputs['tournament']['getTournament']['games']
 
 type GameScheduleType = {
   round: number
@@ -245,12 +242,14 @@ interface stage {
   level: number
   player1Id: string
   player2Id: string
+  id: string
 }
 
 interface extendedStage extends stage {
   x: number
   y: number
   id: string
+  gameId: string
 }
 
 const getGroupSize = (totalPlayers: number) => {
@@ -312,47 +311,63 @@ export const scheduleMultiStageGames = (players: string[]) => {
   return { gameSchedule: matches, numRounds }
 }
 
-export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinate, stages: { [key: number]: stage }) => {
-  let lastStage = 0
-  const nodes: extendedStage[] = []
+export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinate, games: GameType[]) => {
+  const nodes: Node[] = []
   const edges: { id: string, source: string, target: string, type: string, markerEnd?: { type: MarkerType } }[] = []
-  const stagesArray = Object.values(stages).map(s => {
-    return {
-      ...s,
-      type: s.level == 0 ? 'group' : 'knockout',
-      label: [s.player1Id]
-    }
-  })
-  let x = topLeft.x
-  let sourceNode = 0
-  let id = 0
-
-  stagesArray.forEach(s => {
-    if (s.level > lastStage) {
-      lastStage = s.level
-    }
-  })
-
-  const xdiff = (botRight.x - topLeft.x) / (lastStage + 1)
-  const level0NodesLen = stagesArray.filter(s => s.level == 0).length
-  const yIncrement = (botRight.y - topLeft.y) / level0NodesLen
-
-  for (let i = 0; i < lastStage + 1; i++) {
-    const levelNodes = stagesArray.filter(s => s.level == i)
-    const ydiff = (botRight.y - topLeft.y) / levelNodes.length
-    let y = topLeft.y + i * yIncrement - (i > 0 ? yIncrement / 2 : 0)
-
-    levelNodes.forEach(s => {
-      nodes.push({ ...s, x, y, id: `${id}` })
-      if (i > 0) {
-        edges.push({ id: `edge-${sourceNode}`, source: `${sourceNode}`, target: `${id}`, type: 'smoothstep', markerEnd: { type: MarkerType.Arrow } })
-        edges.push({ id: `edge-${sourceNode + 1}`, source: `${sourceNode + 1}`, target: `${id}`, type: 'smoothstep', markerEnd: { type: MarkerType.Arrow } })
-        sourceNode += 2
-      }
-      id++
-      y += ydiff
-    })
-    x += xdiff
+  const height = topLeft.y - botRight.y
+  const width = topLeft.x - botRight.x
+  const numLevel0Games = games.filter(g => g.level == 0).length
+  const numStages = Math.max(...games.map(g => g.level)) + 1
+  const yDiff = height / numLevel0Games
+  const xDiff = width / numStages
+  const twoDGamesArray = []
+  for (let i = 0; i < numStages; i++) {
+    twoDGamesArray.push(games.filter(g => g.level == i).sort((a, b) => a.id - b.ids))
   }
+
+  twoDGamesArray.forEach((stage: GameType[], i) => {
+    const yBase = i * yDiff - (yDiff / 2)
+    const xBase = i * xDiff
+    stage.forEach((game: GameType, j) => {
+      const newNode: Node = {
+        id: `${i}-${j}`,
+        position: {
+          x: xBase,
+          y: yBase + j * yDiff
+        },
+        data: game
+      }
+      nodes.push(newNode)
+    })
+  })
+
+  // for (let i = 0; i < lastStage + 1; i++) {
+  //   const levelNodes = stagesArray.filter(s => s.level == i)
+  //   const ydiff = (botRight.y - topLeft.y) / levelNodes.length
+  //   let y = topLeft.y + i * yIncrement - (i > 0 ? yIncrement / 2 : 0)
+
+  //   levelNodes.forEach(s => {
+  //     nodes.push({ ...s, x, y, id: `${id}`, gameId: s.id })
+  //     if (i > 0) {
+  //       edges.push({ id: `edge-${sourceNode}`, source: `${sourceNode}`, target: `${id}`, type: 'smoothstep', markerEnd: { type: MarkerType.Arrow } })
+  //       edges.push({ id: `edge-${sourceNode + 1}`, source: `${sourceNode + 1}`, target: `${id}`, type: 'smoothstep', markerEnd: { type: MarkerType.Arrow } })
+  //       sourceNode += 2
+  //     }
+  //     id++
+  //     y += ydiff
+  //   })
+  //   x += xdiff
+  // }
   return { nodes, edges }
+}
+
+export const calcKnockoutGames = (games: GamesType) => {
+  const players = games.reduce((acc, curr) => {
+    return {
+      ...acc,
+      [curr.player1Id]: curr.player1.name,
+      [curr.player2Id]: curr.player2.name
+    }
+  }, {})
+  return players
 }
