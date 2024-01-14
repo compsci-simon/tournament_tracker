@@ -1,6 +1,7 @@
 import { MarkerType, Node } from "reactflow";
 import { RouterOutputs } from "~/server/api/trpc";
 import { GameType } from "~/type";
+import { v4 as uuidv4 } from 'uuid'
 
 type PlayerType = {
   id: string;
@@ -245,13 +246,6 @@ interface stage {
   id: string
 }
 
-interface extendedStage extends stage {
-  x: number
-  y: number
-  id: string
-  gameId: string
-}
-
 const getGroupSize = (totalPlayers: number) => {
   const groupSizes: { [key: number]: { ratio: number, groupSize: number } } = {}
   for (let groupSize = 2; groupSize <= totalPlayers; groupSize++) {
@@ -314,8 +308,8 @@ export const scheduleMultiStageGames = (players: string[]) => {
 export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinate, games: GameType[]) => {
   const nodes: Node[] = []
   const edges: { id: string, source: string, target: string, type: string, markerEnd?: { type: MarkerType } }[] = []
-  const height = topLeft.y - botRight.y
-  const width = topLeft.x - botRight.x
+  const height = botRight.y - topLeft.y
+  const width = botRight.x - topLeft.x
   const numLevel0Games = games.filter(g => g.level == 0).length
   const numStages = Math.max(...games.map(g => g.level)) + 1
   const yDiff = height / numLevel0Games
@@ -326,38 +320,48 @@ export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinat
   }
 
   twoDGamesArray.forEach((stage: GameType[], i) => {
-    const yBase = i * yDiff - (yDiff / 2)
+    const yBase = i * (yDiff / 2)
     const xBase = i * xDiff
     stage.forEach((game: GameType, j) => {
       const newNode: Node = {
-        id: `${i}-${j}`,
+        id: game.id,
         position: {
           x: xBase,
           y: yBase + j * yDiff
         },
-        data: game
+        data: game,
+        type: 'knockoutNode'
       }
       nodes.push(newNode)
     })
   })
 
-  // for (let i = 0; i < lastStage + 1; i++) {
-  //   const levelNodes = stagesArray.filter(s => s.level == i)
-  //   const ydiff = (botRight.y - topLeft.y) / levelNodes.length
-  //   let y = topLeft.y + i * yIncrement - (i > 0 ? yIncrement / 2 : 0)
+  twoDGamesArray.forEach((stages: GameType[], i) => {
+    if (i == 0) return;
+    stages.forEach((game, j) => {
+      const newEdge1 = {
+        id: uuidv4(),
+        source: twoDGamesArray[i - 1][j * 2].id,
+        target: twoDGamesArray[i][j].id,
+        type: 'smoothstep',
+        markerEnd: {
+          type: MarkerType.Arrow
+        }
+      }
+      const newEdge2 = {
+        id: uuidv4(),
+        source: twoDGamesArray[i - 1][j * 2 + 1].id,
+        target: twoDGamesArray[i][j].id,
+        type: 'smoothstep',
+        markerEnd: {
+          type: MarkerType.Arrow
+        }
+      }
+      edges.push(newEdge1)
+      edges.push(newEdge2)
+    })
+  })
 
-  //   levelNodes.forEach(s => {
-  //     nodes.push({ ...s, x, y, id: `${id}`, gameId: s.id })
-  //     if (i > 0) {
-  //       edges.push({ id: `edge-${sourceNode}`, source: `${sourceNode}`, target: `${id}`, type: 'smoothstep', markerEnd: { type: MarkerType.Arrow } })
-  //       edges.push({ id: `edge-${sourceNode + 1}`, source: `${sourceNode + 1}`, target: `${id}`, type: 'smoothstep', markerEnd: { type: MarkerType.Arrow } })
-  //       sourceNode += 2
-  //     }
-  //     id++
-  //     y += ydiff
-  //   })
-  //   x += xdiff
-  // }
   return { nodes, edges }
 }
 

@@ -4,12 +4,8 @@ import React, { useMemo } from 'react'
 import ReactFlow from 'reactflow'
 import GroupStageNode from './GroupStageNode'
 import KnockoutNode from './KnockoutNode'
-import { RouterOutputs } from "~/server/api/trpc"
 import { calculatedNodePositions } from '~/utils/tournament';
-import { api } from '~/utils/api';
 import { GameType } from '~/type';
-
-type GamesType = RouterOutputs['tournament']['getTournament']['games']
 
 const TOPLEFT = {
   x: 0,
