@@ -396,18 +396,6 @@ function MultiStageView({ tournament }: ViewPropsType) {
       <Box padding={2}>
         <Paper>
           <TabPanel tabs={tabs} />
-          <Box p={4} >
-            <Button
-              variant='outlined'
-              onClick={() => setKGames(knockoutGames)}
-            >
-              Schedule stuff
-            </Button>
-            <br />
-            <pre>
-              {JSON.stringify(kGames, null, 2)}
-            </pre>
-          </Box>
         </Paper>
       </Box>
     </Container>

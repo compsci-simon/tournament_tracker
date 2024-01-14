@@ -237,7 +237,7 @@ export const tournamentRouter = createTRPCRouter({
         data: {
           player1Points: input.player1Points,
           player2Points: input.player2Points,
-          time: new Date()
+          time: new Date(),
         }
       })
     }),

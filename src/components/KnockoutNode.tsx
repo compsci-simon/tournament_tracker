@@ -10,12 +10,16 @@ function KnockoutNode(props: nodeProps) {
   const [showDialog, setShowDialog] = useState(false)
   const [player1Points, setPlayer1Points] = useState(props.data.player1Points)
   const [player2Points, setPlayer2Points] = useState(props.data.player2Points)
+  const game = props.data
   let label = ''
+  let scoreLabel = ''
   if (!(props.data.player1) && !(props.data.player2)) {
     label = 'To be determined...'
   } else {
-    label = `${props.data?.player1?.name} vs ${props.data?.player2?.name}`
+    label = `${game?.player1?.name} vs ${props.data?.player2?.name}`
+    scoreLabel = `${game.player1Points} - ${game.player2Points}`
   }
+
 
   return (
     <>
@@ -32,6 +36,7 @@ function KnockoutNode(props: nodeProps) {
       <Handle type='target' position={Position.Left} style={{ opacity: 0 }} />
       <Box padding={3} sx={NODESTYLE}>
         <Typography>{label}</Typography>
+        <Typography sx={{ textAlign: 'center' }}>{scoreLabel}</Typography>
         <Button
           color='primary'
           variant='outlined'

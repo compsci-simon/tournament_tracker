@@ -147,4 +147,5 @@ export const NODESTYLE: React.CSSProperties = {
   borderRadius: '10px',
   color: 'black',
   minWidth: '130px',
+  cursor: 'pointer'
 }
