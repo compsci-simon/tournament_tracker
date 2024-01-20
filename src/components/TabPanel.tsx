@@ -1,7 +1,8 @@
 import * as React from 'react';
+import { useState } from 'react';
+
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 
 interface TabPanelProps {
@@ -43,7 +44,7 @@ type TabProps = {
 }
 
 export default function BasicTabs({ tabs }: TabProps) {
-  const [value, setValue] = React.useState(1);
+  const [value, setValue] = useState(0);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);

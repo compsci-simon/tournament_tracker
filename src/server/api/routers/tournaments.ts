@@ -497,8 +497,4 @@ export const tournamentRouter = createTRPCRouter({
       })
       return getLeadersFromList(Object.values(playerScoresMap))
     }),
-  progressToNextKnockoutRound: protectedProcedure
-    .input(z.object({ tournamentId: z.string() }))
-    .query(async ({ ctx, input }) => {
-    })
 })
