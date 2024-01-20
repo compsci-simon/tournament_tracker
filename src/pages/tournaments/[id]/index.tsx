@@ -378,11 +378,7 @@ function MultiStageView({ tournament }: ViewPropsType) {
     },
     {
       title: 'Knockout',
-      content: (
-        <Box height={500} width={500}>
-          <KnockoutTree games={knockoutGames} />
-        </Box>
-      )
+      content: <KnockoutTree games={knockoutGames} />
     },
   ]
 

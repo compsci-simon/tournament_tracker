@@ -22,21 +22,23 @@ const KnockoutTree = ({ games }: { games: GameType[] }) => {
   const { nodes, edges } = calculatedNodePositions(TOPLEFT, BOTTOMRIGHT, games)
 
   return (
-    <Box padding={4} height='100%' display='flex' alignContent='center'>
-      <ReactFlow
-        nodeOrigin={[0.5, 0.5]}
-        nodeTypes={NodeTypes}
-        nodes={nodes}
-        edges={edges}
-        panOnDrag={false}
-        preventScrolling={true}
-        zoomOnScroll={false}
-        zoomOnDoubleClick={false}
-        fitView
-        proOptions={{
-          hideAttribution: true
-        }}
-      />
+    <Box padding={4} height='100%' width='100%' display='flex' justifyContent='center'>
+      <Box height='500px' width='500px'>
+        <ReactFlow
+          nodeOrigin={[0.5, 0.5]}
+          nodeTypes={NodeTypes}
+          nodes={nodes}
+          edges={edges}
+          panOnDrag={false}
+          preventScrolling={true}
+          zoomOnScroll={false}
+          zoomOnDoubleClick={false}
+          fitView
+          proOptions={{
+            hideAttribution: true
+          }}
+        />
+      </Box>
     </Box>
   )
 }
