@@ -2,6 +2,7 @@ import { MarkerType, Node } from "reactflow";
 import { RouterOutputs } from "~/server/api/trpc";
 import { GameType } from "~/type";
 import { v4 as uuidv4 } from 'uuid'
+import { Game } from "@prisma/client"
 
 type PlayerType = {
   id: string;
@@ -262,18 +263,8 @@ const getGroupSize = (totalPlayers: number) => {
   return sizes[0].groupSize ?? 4
 }
 
-function closestPowerOf2LessThan(number: number) {
-  let powerOf2 = 1;
-
-  while (powerOf2 * 2 < number) {
-    powerOf2 *= 2;
-  }
-
-  return powerOf2;
-}
-
-export const scheduleMultiStageGames = (players: string[]) => {
-  const matches: { type: string, group?: string, level?: number, player1Id?: string, player2Id?: string, round: number }[] = []
+export const scheduleMultiStageGames = (players: string[], tournamentId: string) => {
+  const matches: Game[] = []
   const totalPlayers = players.length
   const groupSize = getGroupSize(totalPlayers)
   const baseGroup = 'A'
@@ -283,24 +274,58 @@ export const scheduleMultiStageGames = (players: string[]) => {
     const { schedule } = roundRobinScheduleGames(roundPlayers)
     schedule.forEach(game => {
       matches.push({
+        id: uuidv4(),
         type: 'group',
-        group: String.fromCharCode(baseGroup.charCodeAt(0) + group),
+        tournamentId: '',
+        poolId: String.fromCharCode(baseGroup.charCodeAt(0) + group),
         player1Id: game.player1Id,
         player2Id: game.player2Id,
-        round: game.round
+        round: game.round,
+        time: new Date(),
+        player1Points: 0,
+        player2Points: 0,
+        nextRoundId: undefined,
+        level: undefined
       })
     })
   }
 
-  const numPlayersThatProgress = closestPowerOf2LessThan(totalPlayers)
+  const numPlayersThatProgress = Math.pow(2, Math.floor(Math.log2(totalPlayers)))
 
-  for (let i = numPlayersThatProgress, level = 0; i > 1; i /= 2, level++) {
-    for (let j = 0; j < i / 2; j++) {
-      matches.push({ type: 'knockout', level, round: groupSize + level, player1Id: null, player2Id: null })
+  let currentRound = []
+  for (let level = 0; level < Math.log2(numPlayersThatProgress); level++) {
+    const prevRound = currentRound
+    currentRound = []
+    const numRoundGames = numPlayersThatProgress / Math.pow(2, level + 1)
+    for (let gameNum = 0; gameNum < numRoundGames; gameNum++) {
+      const id = uuidv4()
+      currentRound.push({
+        id: id,
+        type: 'knockout',
+        tournamentId: '',
+        level,
+        round: groupSize + level,
+        time: new Date(),
+        poolId: undefined,
+        player1Id: undefined,
+        player2Id: undefined,
+        player1Points: 0,
+        player2Points: 0,
+        nextRoundId: undefined,
+      })
+      if (level != 0) {
+        const match1 = prevRound.pop()
+        const match2 = prevRound.pop()
+        match1.nextRoundId = id
+        match2.nextRoundId = id
+        matches.push(match1)
+        matches.push(match2)
+      }
     }
   }
+  matches.push(currentRound.pop())
 
-  const numRounds = groupSize - 1 + Math.log2(numPlayersThatProgress) - 1
+  const numRounds = Math.log2(numPlayersThatProgress)
 
   return { gameSchedule: matches, numRounds }
 }

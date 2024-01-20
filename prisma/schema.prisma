@@ -109,9 +109,12 @@ model Game {
     player2       User?       @relation("player2", fields: [player2Id], references: [id])
     type          String      @default("group")
     level         Int?
-    group         String?
+    // The `group` field indicates the pool to which this game belongs
+    poolId        String?
     ratings       Rating[]
     userGame      UserGame[]
+    // nextRoundId is the ID of the next game, given this is a knockout game
+    nextRoundId   String?
 }
 
 model Tournament {

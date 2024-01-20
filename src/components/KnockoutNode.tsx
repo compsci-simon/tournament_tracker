@@ -14,12 +14,11 @@ function KnockoutNode(props: nodeProps) {
   const [player2Points, setPlayer2Points] = useState(props.data.player2Points)
   const utils = api.useContext()
   const game = props.data
-  let label = ''
+  let label = `${game?.player1?.name ?? 'TBD'} vs ${props.data?.player2?.name ?? 'TBD'}`
   let scoreLabel = ''
   if (!(props.data.player1) && !(props.data.player2)) {
     label = 'To be determined...'
   } else {
-    label = `${game?.player1?.name} vs ${props.data?.player2?.name}`
     scoreLabel = `${game.player1Points} - ${game.player2Points}`
   }
   const onSuccess = (data: Game) => {

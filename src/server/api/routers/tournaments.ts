@@ -1,7 +1,132 @@
+import { Game, PrismaClient } from "@prisma/client"
 import { TRPCError } from "@trpc/server"
+import assert from "assert"
 import { z } from "zod"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
 import { calculateNewRatings, getLeadersFromList, mostGamesUser, numPlayedGames, playerRankingHistories, weeksBiggestGainer } from "~/utils/tournament"
+
+const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
+  const groupGames = await prisma.game.findMany({
+    where: {
+      tournamentId,
+      type: 'group',
+    },
+    select: {
+      ratings: true,
+    }
+  })
+  const unplayedGames = groupGames.find(g => g.ratings.length != 2)
+  if (unplayedGames) return false;
+  const knockoutGames = await prisma.game.findMany({
+    where: {
+      tournamentId,
+      type: 'knockout'
+    }
+  })
+  if (knockoutGames.some(g => g.player1Id)) return false;
+  return true
+}
+
+const startKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
+
+  const games = await prisma.game.findMany({
+    where: {
+      tournamentId: tournamentId
+    }
+  })
+
+  const numberOfPlayersToProgress = games.filter(g => g.level == 0).length * 2
+  const playersThatProgress = []
+  // Get the players that will progress from the group stages to the knockout stages
+  const tournamentPlayerIds = games.reduce((acc, game) => {
+    if (game.player1Id && !acc.includes(game.player1Id)) {
+      acc.push(game.player1Id)
+    }
+    if (game.player2Id && !acc.includes(game.player2Id)) {
+      acc.push(game.player2Id)
+    }
+    return acc
+  }, [] as string[])
+  const playerScores = tournamentPlayerIds
+    .reduce((acc, playerId) => {
+      const playerWins = games.filter(game => {
+        return (game.player1Id == playerId && game.player1Points > game.player2Points)
+          || (game.player2Id == playerId && game.player2Points > game.player1Points)
+      }).length
+      acc.push({ playerId, playerWins })
+      return acc
+    }, [] as { playerId: string, playerWins: number }[])
+    .sort((a, b) => b.playerWins - a.playerWins)
+
+  for (let i = 0; i < numberOfPlayersToProgress; i++) {
+    playersThatProgress.push(playerScores[i].playerId)
+  }
+
+  const level0Games = games.filter(game => game.level == 0)
+  for (let i = 0; i < level0Games.length; i++) {
+    const player1Id = playersThatProgress[i * 2]
+    const player2Id = playersThatProgress[i * 2 + 1]
+    await prisma.game.update({
+      where: {
+        id: level0Games[i].id
+      },
+      data: {
+        player1: {
+          connect: {
+            id: player1Id
+          }
+        },
+        player2: {
+          connect: {
+            id: player2Id
+          }
+        }
+      }
+    })
+  }
+}
+
+const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
+  const nextRoundGame = await prisma.game.findFirst({
+    where: {
+      id: game.nextRoundId
+    }
+  })
+  if (!nextRoundGame) {
+    // This is the last game of the tournament
+    return
+  }
+  if (game.player1Points == game.player2Points) return;
+  const winnerId = game.player1Points > game.player2Points ? game.player1Id : game.player2Id
+  assert(winnerId)
+  if (!nextRoundGame.player1Id || [game.player1Id, game.player2Id].includes(nextRoundGame.player1Id)) {
+    await prisma.game.update({
+      where: {
+        id: nextRoundGame.id
+      },
+      data: {
+        player1: {
+          connect: {
+            id: winnerId
+          }
+        }
+      }
+    })
+  } else {
+    await prisma.game.update({
+      where: {
+        id: nextRoundGame.id
+      },
+      data: {
+        player2: {
+          connect: {
+            id: winnerId
+          }
+        }
+      }
+    })
+  }
+}
 
 export const tournamentRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -230,7 +355,7 @@ export const tournamentRouter = createTRPCRouter({
           }
         }
       })
-      return ctx.prisma.game.update({
+      const updatedGame = await ctx.prisma.game.update({
         where: {
           id: input.gameId
         },
@@ -238,8 +363,21 @@ export const tournamentRouter = createTRPCRouter({
           player1Points: input.player1Points,
           player2Points: input.player2Points,
           time: new Date(),
+        },
+        include: {
+          player1: true,
+          player2: true
         }
       })
+      if (updatedGame.type == 'group') {
+        const canStart = await canStartKnockoutRounds(ctx.prisma, updatedGame.tournamentId)
+        if (canStart) {
+          await startKnockoutRounds(ctx.prisma, updatedGame.tournamentId)
+        }
+      } else if (updatedGame.type == 'knockout') {
+        setNextRoundPlayers(ctx.prisma, updatedGame)
+      }
+      return updatedGame
     }),
   overviewStats: protectedProcedure
     .query(async ({ ctx }) => {
@@ -362,98 +500,5 @@ export const tournamentRouter = createTRPCRouter({
   progressToNextKnockoutRound: protectedProcedure
     .input(z.object({ tournamentId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const games = await ctx.prisma.game.findMany({
-        where: {
-          tournamentId: input.tournamentId
-        }
-      })
-      const sortedKnockoutGames = games
-        .filter(g => g.type == 'knockout')
-        .sort((a, b) => a.level - b.level)
-
-      const level = sortedKnockoutGames.find(g => !Boolean(g.player1Id))?.level
-      if (level === undefined) {
-        console.log('There are no more rounds to this tournament left.')
-        return
-      }
-      const numberOfPlayersToProgress = games.filter(g => g.level == level).length * 2
-      const playersThatProgress = []
-      if (level == 0) {
-        // Get the players that will progress from the group stages to the knockout stages
-        const playerIds = games.reduce((acc, game) => {
-          if (game.player1Id && !acc.includes(game.player1Id)) {
-            acc.push(game.player1Id)
-          }
-          if (game.player2Id && !acc.includes(game.player2Id)) {
-            acc.push(game.player2Id)
-          }
-          return acc
-        }, [] as string[])
-        const playerScores = playerIds
-          .reduce((acc, playerId) => {
-            const playerWins = games.filter(game => {
-              return (game.player1Id == playerId && game.player1Points > game.player2Points)
-                || (game.player2Id == playerId && game.player2Points > game.player1Points)
-            }).length
-            acc.push({ playerId, playerWins })
-            return acc
-          }, [] as { playerId: string, playerWins: number }[])
-          .sort((a, b) => b.playerWins - a.playerWins)
-
-        for (let i = 0; i < numberOfPlayersToProgress; i++) {
-          playersThatProgress.push(playerScores[i].playerId)
-        }
-      } else {
-        // Get the players that progress to the next round of the knockout stages
-        const playerIds = games.filter(game => game.level == level - 1).reduce((acc, game) => {
-          if (!acc.includes(game.player1Id)) {
-            acc.push(game.player1Id)
-          }
-          if (!acc.includes(game.player2Id)) {
-            acc.push(game.player2Id)
-          }
-          return acc
-        }, [] as string[])
-        const prevLevelGames = games.filter(game => game.level == level - 1)
-
-        const playerScores = playerIds
-          .reduce((acc, playerId) => {
-            const playerWins = prevLevelGames.filter(game => {
-              return (game.player1Id == playerId && game.player1Points > game.player2Points)
-                || (game.player2Id == playerId && game.player2Points > game.player1Points)
-            }).length
-            acc.push({ playerId, playerWins })
-            return acc
-          }, [] as { playerId: string, playerWins: number }[])
-          .sort((a, b) => a.playerWins - b.playerWins)
-
-        for (let i = 0; i < numberOfPlayersToProgress; i++) {
-          playersThatProgress.push(playerScores[i].playerId)
-        }
-      }
-      // Now that we have the players that are to continue, we need to set the player1 and player2
-      // ids on the games for the current level
-      const currentLevelGames = games.filter(game => game.level == level)
-      for (let i = 0; i < currentLevelGames.length; i++) {
-        const player1Id = playersThatProgress[i * 2]
-        const player2Id = playersThatProgress[i * 2 + 1]
-        await ctx.prisma.game.update({
-          where: {
-            id: currentLevelGames[i].id
-          },
-          data: {
-            player1: {
-              connect: {
-                id: player1Id
-              }
-            },
-            player2: {
-              connect: {
-                id: player2Id
-              }
-            }
-          }
-        })
-      }
     })
 })
