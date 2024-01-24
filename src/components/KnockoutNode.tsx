@@ -2,39 +2,36 @@ import React, { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { Handle, Position } from "reactflow";
 
-import { nodeProps } from "~/type";
 import { NODESTYLE } from "~/utils/constants";
 import SetGamePointsModal from "./SetGamePointsModal";
-import { api } from "~/utils/api";
-import { Game } from "@prisma/client";
+import { SetGameType, api } from "~/utils/api";
+import { GameWithPlayers, TournamentWithGamesWithPlayers } from "~/types";
 
-function KnockoutNode(props: nodeProps) {
+function KnockoutNode({ data: game }: { data: GameWithPlayers }) {
   const [showDialog, setShowDialog] = useState(false)
-  const [player1Points, setPlayer1Points] = useState(props.data.player1Points)
-  const [player2Points, setPlayer2Points] = useState(props.data.player2Points)
+  const [player1Points, setPlayer1Points] = useState(game.player1Points)
+  const [player2Points, setPlayer2Points] = useState(game.player2Points)
   const utils = api.useContext()
-  const game = props.data
-  let label = `${game?.player1?.name ?? 'TBD'} vs ${props.data?.player2?.name ?? 'TBD'}`
+  let label = `${game?.player1?.name ?? 'TBD'} vs ${game?.player2?.name ?? 'TBD'}`
   let scoreLabel = ''
-  if (!(props.data.player1) && !(props.data.player2)) {
+  if (!(game.player1) && !(game.player2)) {
     label = 'To be determined...'
   } else {
     scoreLabel = `${game.player1Points} - ${game.player2Points}`
   }
-  const onSuccess = (data: Game) => {
+  const onSuccess = (data: SetGameType) => {
     utils.tournament.getTournament.setData({
-      id: props.data.tournamentId
-    }, (oldData) => {
+      id: data.updatedGame.tournamentId
+    }, (oldData: TournamentWithGamesWithPlayers) => {
+      const updatedGame = data.updatedGame
+      const nextRound = data.nextRound
       return {
         ...oldData,
-        games: oldData.games.map(game => {
-          if (game.id == data.id) {
-            return {
-              ...game,
-              player1Points: data.player1Points,
-              player2Points: data.player2Points,
-              time: data.time
-            }
+        games: oldData.games.map((game) => {
+          if (game.id == updatedGame?.id) {
+            return updatedGame
+          } else if (game.id == nextRound.id) {
+            return nextRound
           }
           return game
         })
@@ -52,7 +49,7 @@ function KnockoutNode(props: nodeProps) {
         player2Points={player2Points}
         setPlayer2Points={setPlayer2Points}
         onSuccess={onSuccess}
-        game={props.data}
+        game={game}
       />
       <Handle type='source' position={Position.Right} style={{ opacity: 0 }} />
       <Handle type='target' position={Position.Left} style={{ opacity: 0 }} />
@@ -62,7 +59,7 @@ function KnockoutNode(props: nodeProps) {
         <Button
           color='primary'
           variant='outlined'
-          disabled={!(props.data?.player1) || !(props.data?.player2)}
+          disabled={!(game?.player1) || !(game?.player2)}
           onClick={() => setShowDialog(true)}
         >
           Set Score

@@ -1,39 +1,36 @@
 import { Box } from '@mui/material'
 import 'reactflow/dist/style.css';
-import React, { useMemo } from 'react'
+import React from 'react'
 import ReactFlow from 'reactflow'
 import GroupStageNode from './GroupStageNode'
 import KnockoutNode from './KnockoutNode'
 import { calculatedNodePositions } from '~/utils/tournament';
-import { GameType } from '~/type';
+import { Game } from '@prisma/client';
 
 const TOPLEFT = {
   x: 0,
   y: 0
 }
-
-const BOTTOMRIGHT = {
-  x: 600,
-  y: 600
-}
 const NodeTypes = { groupStageNode: GroupStageNode, knockoutNode: KnockoutNode }
 
-const KnockoutTree = ({ games }: { games: GameType[] }) => {
+const KnockoutTree = ({ games }: { games: Game[] }) => {
+  const level0Games = games.filter(g => g.level == 0).length
+  const BOTTOMRIGHT = {
+    x: level0Games * 130,
+    y: level0Games * 150
+  }
   const { nodes, edges } = calculatedNodePositions(TOPLEFT, BOTTOMRIGHT, games)
 
   return (
-    <Box padding={4} height='100%' width='100%' display='flex' justifyContent='center'>
-      <Box height='500px' width='500px'>
+    <Box height='100%' width='100%' display='flex' justifyContent='center'>
+      <Box height='600px' width='100%'>
         <ReactFlow
           nodeOrigin={[0.5, 0.5]}
           nodeTypes={NodeTypes}
           nodes={nodes}
           edges={edges}
-          panOnDrag={false}
-          preventScrolling={true}
-          zoomOnScroll={false}
-          zoomOnDoubleClick={false}
           fitView
+          zoomOnDoubleClick={false}
           proOptions={{
             hideAttribution: true
           }}

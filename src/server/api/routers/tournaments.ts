@@ -2,8 +2,8 @@ import { Game, PrismaClient } from "@prisma/client"
 import { TRPCError } from "@trpc/server"
 import assert from "assert"
 import { z } from "zod"
+import { calculateNewRatings, getLeadersFromList, mostGamesUser, playerRatingHistories, weeksBiggestGainer } from "~/utils/tournament"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
-import { calculateNewRatings, getLeadersFromList, mostGamesUser, numPlayedGames, playerRankingHistories, weeksBiggestGainer } from "~/utils/tournament"
 
 const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
   const groupGames = await prisma.game.findMany({
@@ -94,13 +94,13 @@ const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
   })
   if (!nextRoundGame) {
     // This is the last game of the tournament
-    return
+    return null
   }
-  if (game.player1Points == game.player2Points) return;
+  if (game.player1Points == game.player2Points) return null;
   const winnerId = game.player1Points > game.player2Points ? game.player1Id : game.player2Id
   assert(winnerId)
   if (!nextRoundGame.player1Id || [game.player1Id, game.player2Id].includes(nextRoundGame.player1Id)) {
-    await prisma.game.update({
+    return await prisma.game.update({
       where: {
         id: nextRoundGame.id
       },
@@ -113,7 +113,7 @@ const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
       }
     })
   } else {
-    await prisma.game.update({
+    return await prisma.game.update({
       where: {
         id: nextRoundGame.id
       },
@@ -167,26 +167,20 @@ export const tournamentRouter = createTRPCRouter({
         where: {
           id: input.id
         },
-        select: {
+        include: {
           games: {
             include: {
               player1: true,
               player2: true
             }
-          },
-          id: true,
-          startDate: true,
-          roundInterval: true,
-          numRounds: true,
-          players: true,
-          type: true
+          }
         }
       })
     }),
-  getTournamentPlayerGroupGames: protectedProcedure
+  getPlayerGroupGames: protectedProcedure
     .input(z.object({ tournamentId: z.string(), playerId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const x = await ctx.prisma.game.findMany({
+      return await ctx.prisma.game.findMany({
         where: {
           tournamentId: input.tournamentId,
           type: 'group',
@@ -196,26 +190,10 @@ export const tournamentRouter = createTRPCRouter({
           ]
         },
         include: {
-          player1: {
-            select: {
-              name: true,
-              id: true
-            }
-          },
-          player2: {
-            select: {
-              name: true,
-              id: true
-            }
-          },
-          Tournament: {
-            select: {
-              name: true
-            }
-          }
+          player1: true,
+          player2: true
         }
       })
-      return x
     }),
   joinTournament: protectedProcedure
     .input(z.object({
@@ -296,7 +274,10 @@ export const tournamentRouter = createTRPCRouter({
       const player1 = game?.player1
       const player2 = game?.player2
       if (!(player1 && player2)) {
-        return
+        return {
+          updatedGame: null,
+          nextRound: null
+        }
       }
       await ctx.prisma.rating.deleteMany({
         where: {
@@ -304,7 +285,7 @@ export const tournamentRouter = createTRPCRouter({
         }
       })
       if (input.player1Points == 0 && input.player2Points == 0) {
-        return await ctx.prisma.game.update({
+        const updatedGame = await ctx.prisma.game.update({
           where: {
             id: input.gameId
           },
@@ -313,6 +294,10 @@ export const tournamentRouter = createTRPCRouter({
             player2Points: 0,
           }
         })
+        return {
+          updatedGame,
+          nextRound: null
+        }
       }
       const player1Rating = await ctx.prisma.rating.findFirst({
         where: {
@@ -364,9 +349,21 @@ export const tournamentRouter = createTRPCRouter({
           player2Points: input.player2Points,
           time: new Date(),
         },
-        include: {
+        select: {
           player1: true,
-          player2: true
+          player2: true,
+          type: true,
+          tournamentId: true,
+          time: true,
+          round: true,
+          level: true,
+          nextRoundId: true,
+          id: true,
+          player1Points: true,
+          player2Points: true,
+          player1Id: true,
+          player2Id: true,
+          poolId: true
         }
       })
       if (updatedGame.type == 'group') {
@@ -375,9 +372,16 @@ export const tournamentRouter = createTRPCRouter({
           await startKnockoutRounds(ctx.prisma, updatedGame.tournamentId)
         }
       } else if (updatedGame.type == 'knockout') {
-        setNextRoundPlayers(ctx.prisma, updatedGame)
+        const nextRound = setNextRoundPlayers(ctx.prisma, updatedGame)
+        return {
+          updatedGame,
+          nextRound
+        }
       }
-      return updatedGame
+      return {
+        updatedGame,
+        nextRound: null
+      }
     }),
   overviewStats: protectedProcedure
     .query(async ({ ctx }) => {
@@ -407,14 +411,16 @@ export const tournamentRouter = createTRPCRouter({
           _count: { select: { userGames: true } }
         },
       })
-      console.log(x)
+      const numPlayedGames = (games: Game[]) => {
+        return games.filter(g => { return g.player1Points > 0 || g.player2Points > 0 }).length
+      }
 
       return {
         numGames: numPlayedGames(games),
         numPlayers,
         mostGames: mostGamesUser(players, games),
         biggestGainer: weeksBiggestGainer(players, ratings),
-        playerRankingHistories: playerRankingHistories(players, ratings)
+        playerRankingHistories: playerRatingHistories(players, ratings)
       }
     }),
   tournamentsStats: protectedProcedure

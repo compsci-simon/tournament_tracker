@@ -12,7 +12,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 
 import { api } from '~/utils/api';
 import { modalStyle } from "~/utils/constants";
-import { GameType } from '~/type';
+import { GameWithPlayers } from '~/types';
 
 const SetGamePointsModal = ({
   open,
@@ -31,13 +31,13 @@ const SetGamePointsModal = ({
   player2Points: number,
   setPlayer2Points: React.Dispatch<number>,
   onSuccess: (data, variables, context) => void
-  game: GameType
+  game: GameWithPlayers
 }) => {
   const { mutate: updatePointsMutation, isLoading } = api.tournament.setGamePoints.useMutation({ onSuccess })
   const resetScores = () => {
     setPlayer1Points(0)
     setPlayer2Points(0)
-    updatePointsMutation({ gameId: game?.id ?? '', player1Points: 0, player2Points: 0 })
+    updatePointsMutation({ gameId: game.id ?? '', player1Points: 0, player2Points: 0 })
   }
 
   if (isLoading) {

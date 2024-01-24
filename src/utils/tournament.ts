@@ -1,36 +1,7 @@
+import { Game, Rating, User } from "@prisma/client";
 import { MarkerType, Node } from "reactflow";
-import { RouterOutputs } from "~/server/api/trpc";
-import { GameType } from "~/type";
 import { v4 as uuidv4 } from 'uuid'
-import { Game } from "@prisma/client"
-
-type PlayerType = {
-  id: string;
-  createdAt: Date;
-  name: string;
-  avatar: string;
-}
-
-type RatingType = {
-  id: string;
-  time: Date;
-  rating: number;
-  userId: string;
-  gameId: string | null;
-  player: {
-    id: string;
-    createdAt: Date;
-    name: string;
-  }
-}
-
-type GamesType = RouterOutputs['tournament']['getTournament']['games']
-
-type GameScheduleType = {
-  round: number
-  player1Id: string
-  player2Id: string
-}
+import { GameWithPlayers, RatingWithPlayer } from "~/types";
 
 const kFactor = 25
 
@@ -144,7 +115,7 @@ export const getLeadersFromList: (players: { name: string, score: number }[]) =>
 }
 
 
-export const weeksBiggestGainer = (players: PlayerType[], ratings: RatingType[]) => {
+export const weeksBiggestGainer = (players: User[], ratings: RatingWithPlayer[]) => {
 
   const playerIncreases: { increase: number, name: string }[] = []
   players.forEach(player => {
@@ -169,11 +140,7 @@ export const weeksBiggestGainer = (players: PlayerType[], ratings: RatingType[])
   }
 }
 
-export const numPlayedGames = (games: GameType[]) => {
-  return games.filter(g => { return g.player1Points > 0 || g.player2Points > 0 }).length
-}
-
-export const mostGamesUser = (players: PlayerType[], games: GameType[]) => {
+export const mostGamesUser = (players: User[], games: GameWithPlayers[]) => {
   const totalGames: { [key: string]: { name: string, totalGames: number } } = {}
 
   players.forEach(player => {
@@ -200,10 +167,10 @@ export const mostGamesUser = (players: PlayerType[], games: GameType[]) => {
   }
 }
 
-export const playerRankingHistories = (players: PlayerType[], rankings: RatingType[]) => {
+export const playerRatingHistories = (players: User[], ratings: RatingWithPlayer[]) => {
   const historiesMap: { [key: string]: { name: string, history: number[], current: number, avatar: string } } = {}
   players.forEach(player => {
-    const playerHistory = rankings.filter(ranking => ranking.userId == player.id).sort((a, b) => a.time.getTime() - b.time.getTime())
+    const playerHistory = ratings.filter(ranking => ranking.userId == player.id).sort((a, b) => a.time.getTime() - b.time.getTime())
     historiesMap[player.id] = {
       name: player.name,
       history: playerHistory.map(h => h.rating),
@@ -240,39 +207,32 @@ type coordinate = {
   y: number
 }
 
-interface stage {
-  level: number
-  player1Id: string
-  player2Id: string
-  id: string
-}
-
 const getGroupSize = (totalPlayers: number) => {
   const groupSizes: { [key: number]: { ratio: number, groupSize: number } } = {}
-  for (let groupSize = 2; groupSize <= totalPlayers; groupSize++) {
-    const numGroups = Math.ceil(totalPlayers / groupSize)
-    const avgPlayers = totalPlayers * 1.0 / numGroups
+  for (let groupSize = 2; groupSize < totalPlayers; groupSize++) {
     const remainder = totalPlayers % groupSize
-    let variance = Math.pow(groupSize - avgPlayers, 2) * numGroups + (remainder != 0 ? Math.pow(remainder - avgPlayers, 2) : 0)
     groupSizes[groupSize] = {
       groupSize,
-      ratio: 2 * variance + Math.pow(groupSize - 4, 2) + Math.min(0, groupSize - 4) * -2
+      ratio: (1 + remainder * Math.pow(remainder, 2)) + (0.2 * (1 + Math.abs(groupSize - 4)))
     }
   }
   const sizes = Object.values(groupSizes).sort((a, b) => a.ratio - b.ratio)
-  return sizes[0].groupSize ?? 4
+  return sizes.at(0)?.groupSize ?? 4
 }
 
-export const scheduleMultiStageGames = (players: string[], tournamentId: string) => {
-  const matches: Game[] = []
+export const scheduleMultiStageGames = (players: string[]) => {
+  const matches: any[] = []
   const totalPlayers = players.length
   const groupSize = getGroupSize(totalPlayers)
   const baseGroup = 'A'
 
-  for (let group = 0; group < Math.ceil(totalPlayers * 1.0 / groupSize); group++) {
-    const roundPlayers = players.slice(4 * group, 4 * (group + 1))
+  for (let group = 0; (group + 1) * groupSize < totalPlayers; group++) {
+    let roundPlayers = players.slice(groupSize * group, groupSize * (group + 1))
+    if ((group + 2) * groupSize >= totalPlayers) {
+      roundPlayers = players.slice(groupSize * group)
+    }
     const { schedule } = roundRobinScheduleGames(roundPlayers)
-    schedule.forEach(game => {
+    schedule.filter(g => g.player1Id && g.player2Id).forEach(game => {
       matches.push({
         id: uuidv4(),
         type: 'group',
@@ -330,24 +290,42 @@ export const scheduleMultiStageGames = (players: string[], tournamentId: string)
   return { gameSchedule: matches, numRounds }
 }
 
-export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinate, games: GameType[]) => {
+export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinate, games: Game[]) => {
   const nodes: Node[] = []
   const edges: { id: string, source: string, target: string, type: string, markerEnd?: { type: MarkerType } }[] = []
   const height = botRight.y - topLeft.y
   const width = botRight.x - topLeft.x
   const numLevel0Games = games.filter(g => g.level == 0).length
   const numStages = Math.max(...games.map(g => g.level)) + 1
-  const yDiff = height / numLevel0Games
+  const yDiffBase = height / numLevel0Games
   const xDiff = width / numStages
   const twoDGamesArray = []
   for (let i = 0; i < numStages; i++) {
-    twoDGamesArray.push(games.filter(g => g.level == i).sort((a, b) => a.id - b.ids))
+    const stageGames = games
+      .filter(game => game.level == i)
+      .sort((gameA, gameB) => {
+        if (i > 0) {
+          const AParentsMinYIndex = Math.min(...twoDGamesArray[i - 1]
+            .filter(node => node.nextRoundId == gameA.id)
+            .map(node => twoDGamesArray[i - 1].indexOf(node))
+          )
+          const BParentsMinYIndex = Math.min(...twoDGamesArray[i - 1]
+            .filter(node => node.nextRoundId == gameB.id)
+            .map(node => twoDGamesArray[i - 1].indexOf(node))
+          )
+          return AParentsMinYIndex - BParentsMinYIndex
+        } else {
+          return 1
+        }
+      })
+    twoDGamesArray.push(stageGames)
   }
 
-  twoDGamesArray.forEach((stage: GameType[], i) => {
-    const yBase = i * (yDiff / 2)
+  twoDGamesArray.forEach((stage: Game[], i) => {
+    const yDiff = yDiffBase * Math.pow(2, i)
+    const yBase = (Math.pow(2, i) - 1) * (yDiffBase / 2)
     const xBase = i * xDiff
-    stage.forEach((game: GameType, j) => {
+    stage.forEach((game: Game, j) => {
       const newNode: Node = {
         id: game.id,
         position: {
@@ -361,7 +339,7 @@ export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinat
     })
   })
 
-  twoDGamesArray.forEach((stages: GameType[], i) => {
+  twoDGamesArray.forEach((stages: Game[], i) => {
     if (i == 0) return;
     stages.forEach((game, j) => {
       const newEdge1 = {
@@ -390,7 +368,7 @@ export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinat
   return { nodes, edges }
 }
 
-export const calcKnockoutGames = (games: GamesType) => {
+export const calcKnockoutGames = (games: GameWithPlayers[]) => {
   const players = games.reduce((acc, curr) => {
     return {
       ...acc,

@@ -1,15 +1,15 @@
 import { Box, Typography } from "@mui/material";
 import { Handle, Position } from "reactflow";
+import { GameWithPlayers } from "~/types";
 import { NODESTYLE } from "~/utils/constants";
 
-function GroupStageNode(props: nodeProps) {
+function GroupStageNode({ data }: { data: GameWithPlayers }) {
   return (
     <>
       <Handle type='source' position={Position.Right} style={{ opacity: 0 }} />
       <Box padding={3} sx={NODESTYLE}>
-        {props.data.date}
-        <Typography>{props.data.player1 ?? 'TBD'}</Typography>
-        <Typography>{props.data.player2 ?? 'TBD'}</Typography>
+        <Typography>{data.player1?.name ?? 'TBD'}</Typography>
+        <Typography>{data.player2?.name ?? 'TBD'}</Typography>
       </Box>
     </>
   )

@@ -1,7 +1,6 @@
 import { Box, Button, Collapse, Container, Divider, List, ListItem, ListItemButton, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/router";
-import { api } from "~/utils/api";
-import { RouterOutputs } from "~/server/api/trpc"
+import { GameType, TournamentType, api } from "~/utils/api";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import Layout from "~/components/Layout";
@@ -10,7 +9,7 @@ import { ThemeContext } from "../../_app";
 import { useSession } from "next-auth/react";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import TabPanel from "~/components/TabPanel";
-import { ElementType, groupItemsByKey } from "~/utils/utils";
+import { groupItemsByKey } from "~/utils/utils";
 
 import ReplayIcon from '@mui/icons-material/Replay';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -18,16 +17,9 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
 import KnockoutTree from "~/components/KnockoutTree";
-import { GameType, TournamentType } from "~/type";
+import { Game } from "@prisma/client";
+import assert from "assert";
 
-
-type GameSubsetType = {
-  id: string
-  round: number
-  player1: { name: string, email: string }
-  player2: { name: string, email: string }
-  winner: string
-}
 
 type RenderTablesProps = {
   tournament: TournamentType,
@@ -110,7 +102,7 @@ const RenderTables = (
     userEmail
   }: RenderTablesProps) => {
 
-  const tournamentRounds: { index: number, games: GameSubsetType[] }[] = []
+  const tournamentRounds: { index: number, games: GameType[] }[] = []
   const currentDate = new Date()
   const timeDiff = currentDate.getTime() - tournament.startDate.getTime()
   const currentRoundIndex = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * (tournament.roundInterval === 'week' ? 7 : 1)))
@@ -126,7 +118,7 @@ const RenderTables = (
     }
     return {
       id: game.id,
-      round: game.round,
+      poolId: game.poolId,
       player1: game.player1,
       player2: game.player2,
       winner
@@ -154,10 +146,10 @@ const RenderTables = (
     setOpen(state)
   }, [tournament])
 
-  for (let round = 0; round < tournament.numRounds; round++) {
+  for (let pool = 0; pool < tournament.numRounds; pool++) {
     tournamentRounds.push({
-      index: round,
-      games: games.filter(game => game.round == round)
+      index: pool,
+      games: games.filter(game => game.poolId == 'A')
     })
   }
 
@@ -299,31 +291,50 @@ function RoundRobbinView({ tournament }: ViewPropsType) {
 }
 
 function GroupStageTables({ tournament, games }: { tournament: TournamentType, games: GameType[] }) {
-  const groups = groupItemsByKey<GameType>(games, 'group')
-  const keys = Object.keys(groups)
+  const pools = games.reduce((acc, game) => {
+    if (!(game.poolId in acc)) {
+      acc[game.poolId] = []
+    }
+    acc[game.poolId].push(game)
+    return acc
+  }, {} as { [key: string]: GameType[] })
+  groupItemsByKey<GameType>(games, 'poolId')
+  const poolIds = Object.keys(pools)
   const router = useRouter()
 
-  return <Box>
-    <Stack spacing={3}>
-      {keys.map(key => {
-        const playersIds2d = groups[key].map(game => {
-          return [game.player1Id, game.player2Id]
-        })
-        const playerIds = playersIds2d.reduce((acc, current) => {
-          return acc.concat(current)
-        }, [] as string[]).filter(p => p)
-        const distinctPlayerIds = Array.from(new Set(playerIds))
+  const renderPool = (poolId: string, pool: Game[]) => {
+    const distinctPlayerIds = []
+    pool.forEach(game => {
+      if (game.player1Id && !distinctPlayerIds.includes(game.player1Id)) {
+        distinctPlayerIds.push(game.player1Id)
+      }
+      if (game.player2Id && !distinctPlayerIds.includes(game.player2Id)) {
+        distinctPlayerIds.push(game.player2Id)
+      }
+    })
 
-        return <Stack key={key} spacing={1}>
-          <h2>Group {key}</h2>
-          <List disablePadding>
-            <Divider />
-            {distinctPlayerIds.map((id, index) => {
-              const player = tournament.players?.filter(p => p.id == id)[0]
-              const playerGames = tournament.games.filter(g => g.player1Id == id || g.player2Id == id)
+    const wonGame = (game: GameType, playerId: string) => {
+      return (game.player1Id == playerId && game.player1Points > game.player2Points)
+        || (game.player1Id == playerId && game.player1Points < game.player2Points)
+    }
 
-              return <Box key={id}>
-                <ListItem disablePadding>
+    const draw = (game: GameType) => {
+      return game.player1Points == game.player2Points
+    }
+
+    return (
+      <Stack key={poolId} spacing={1}>
+        <h2>Group {poolId}</h2>
+        <List disablePadding>
+          <Divider />
+          {distinctPlayerIds.map((id, index) => {
+            const player = tournament.players?.find(p => p.id == id)
+            assert(player)
+            const playerGroupGames = tournament.games.filter(g => (g.player1Id == id || g.player2Id == id) && g.type == 'group')
+
+            return (
+              <>
+                <ListItem key={id} disablePadding>
                   <ListItemButton
                     onClick={() => {
                       router.push(`/tournaments/${tournament.id}/${id}`)
@@ -339,17 +350,13 @@ function GroupStageTables({ tournament, games }: { tournament: TournamentType, g
                       </Stack>
 
                       <Stack direction='row' alignItems='center' spacing={1}>
-                        {playerGames.map(game => {
-                          const won = (game.player1Id == id && game.player1Points > game.player2Points)
-                            || (game.player2Id == id && game.player2Points > game.player1Points)
-                          const lost = (game.player1Id == id && game.player1Points < game.player2Points)
-                            || (game.player2Id == id && game.player2Points < game.player1Points)
-                          if (won) {
-                            return <CheckCircleOutlineIcon key={game.id} sx={{ color: '#E4F1E4' }} />
-                          } else if (lost) {
-                            return <HighlightOffIcon key={game.id} sx={{ color: '#FDF2F2' }} />
-                          } else {
+                        {playerGroupGames.map(game => {
+                          if (draw(game)) {
                             return <PanoramaFishEyeIcon key={game.id} sx={{ color: '#D3D3D3' }} />
+                          } else if (wonGame(game, id)) {
+                            return <CheckCircleOutlineIcon key={game.id} sx={{ color: '#E4F1E4' }} />
+                          } else {
+                            return <HighlightOffIcon key={game.id} sx={{ color: '#FDF2F2' }} />
                           }
                         })}
                       </Stack>
@@ -357,13 +364,21 @@ function GroupStageTables({ tournament, games }: { tournament: TournamentType, g
                   </ListItemButton>
                 </ListItem>
                 <Divider />
-              </Box>
-            })}
-          </List>
-        </Stack>
-      })}
-    </Stack>
-  </Box>
+              </>
+            )
+          })}
+        </List>
+      </Stack>
+    )
+  }
+
+  return (
+    <Box>
+      <Stack spacing={3}>
+        {poolIds.map(poolId => renderPool(poolId, pools[poolId]))}
+      </Stack>
+    </Box>
+  )
 }
 
 function MultiStageView({ tournament }: ViewPropsType) {

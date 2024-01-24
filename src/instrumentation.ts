@@ -49,7 +49,7 @@ const startTournament = async (tournamentId: string) => {
       }
     })
   } else if (tournament.type == 'multi-stage') {
-    const { gameSchedule, numRounds } = scheduleMultiStageGames(tournament.players.map(p => p.id), tournament.id)
+    const { gameSchedule, numRounds } = scheduleMultiStageGames(tournament.players.map(p => p.id))
 
     return await prisma.tournament.update({
       where: {
@@ -70,8 +70,8 @@ const startTournament = async (tournamentId: string) => {
                 }
               }
               newGame.userGame.create.push(({ userId: game.player1Id }))
-              delete newGame.player1Id
             }
+            delete newGame.player1Id
             if (game.player2Id) {
               newGame.player2 = {
                 connect: {
@@ -79,8 +79,8 @@ const startTournament = async (tournamentId: string) => {
                 }
               }
               newGame.userGame.create.push(({ userId: game.player2Id }))
-              delete newGame.player2Id
             }
+            delete newGame.player2Id
             return newGame
           })
         },

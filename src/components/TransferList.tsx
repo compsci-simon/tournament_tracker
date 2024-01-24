@@ -7,36 +7,31 @@ import ListItemText from '@mui/material/ListItemText';
 import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
-import { RouterOutputs } from "~/server/api/trpc"
 import { Dispatch, SetStateAction } from 'react';
-
-type ArrayElementType<T extends Array<any>> = T extends Array<infer U> ? U : never;
-
-type UsersType = RouterOutputs['user']['getAll']
-type UserType = ArrayElementType<UsersType>
+import { User } from '@prisma/client';
 
 type TransferListProps = {
-  left: UsersType,
-  setLeft: Dispatch<SetStateAction<UsersType>>,
-  right: UsersType,
-  setRight: Dispatch<SetStateAction<UsersType>>,
+  left: User[],
+  setLeft: Dispatch<SetStateAction<User[]>>,
+  right: User[],
+  setRight: Dispatch<SetStateAction<User[]>>,
 }
 
-function not(a: UsersType, b: UsersType) {
+function not(a: User[], b: User[]) {
   return a.filter((value) => b.indexOf(value) === -1);
 }
 
-function intersection(a: UsersType, b: UsersType) {
+function intersection(a: User[], b: User[]) {
   return a.filter((value) => b.indexOf(value) !== -1);
 }
 
 export default function TransferList({ left, setLeft, right, setRight }: TransferListProps) {
-  const [checked, setChecked] = React.useState<UsersType>([]);
+  const [checked, setChecked] = React.useState<User[]>([]);
 
   const leftChecked = intersection(checked, left);
   const rightChecked = intersection(checked, right);
 
-  const handleToggle = (value: UserType) => () => {
+  const handleToggle = (value: User) => () => {
     const currentIndex = checked.indexOf(value);
     const newChecked = [...checked];
 
@@ -71,7 +66,7 @@ export default function TransferList({ left, setLeft, right, setRight }: Transfe
     setRight([]);
   };
 
-  const customList = (items: UsersType) => (
+  const customList = (items: User[]) => (
     <Paper sx={{ width: 200, height: 230, overflow: 'auto' }}>
       <List dense component="div" role="list">
         {items.map((value) => {

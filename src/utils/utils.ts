@@ -1,7 +1,5 @@
 import { Rating } from "@prisma/client"
 
-export type ElementType<T> = T extends Array<infer U> ? U : never;
-
 export const findStreakFromRatings = (ratings: Rating[]) => {
 
   let streak = 0

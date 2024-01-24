@@ -1,7 +1,11 @@
-import { TRPCError } from "@trpc/server";
+import { TRPCError, inferRouterOutputs } from "@trpc/server"
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { ElementType } from "~/types";
 import { generateAvatar } from "~/utils/users";
+
+type userRouterType = inferRouterOutputs<typeof userRouter>
+export type GetAllUser = ElementType<userRouterType['getAll']>
 
 export const userRouter = createTRPCRouter({
   getAll: publicProcedure.query(({ ctx }) => {

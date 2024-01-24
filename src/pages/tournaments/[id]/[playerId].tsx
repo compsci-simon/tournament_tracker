@@ -1,18 +1,24 @@
-import { Box, Button, Container, Divider, Grid, List, ListItem, ListItemText, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
-import Layout from "~/components/Layout";
-import Link from "next/link";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { useState } from "react";
-import { modalStyle } from "~/utils/constants";
-import { api } from "~/utils/api";
-import { RouterOutputs } from "~/server/api/trpc"
-
-import ReplayIcon from '@mui/icons-material/Replay';
-import { ElementType } from "~/utils/utils";
-import SetGamePointsModal from "~/components/SetGamePointsModal";
 import { Game } from "@prisma/client";
+import {
+  Box,
+  Button,
+  Container,
+  Divider,
+  Grid,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  Typography
+} from "@mui/material";
 
-type GameType = ElementType<RouterOutputs['tournament']['getTournamentPlayerGroupGames']>
+import Layout from "~/components/Layout";
+import { api } from "~/utils/api";
+import SetGamePointsModal from "~/components/SetGamePointsModal";
+import { GameWithPlayers } from "~/types";
 
 export default function PlayerGroupGames() {
   const router = useRouter()
@@ -21,35 +27,37 @@ export default function PlayerGroupGames() {
   const [open, setOpen] = useState(false)
   const [player1Points, setPlayer1Points] = useState(0)
   const [player2Points, setPlayer2Points] = useState(0)
-  const [selectedGame, setSelectedGame] = useState<GameType | null>(null)
+  const [selectedGame, setSelectedGame] = useState<GameWithPlayers | null>(null)
   const utils = api.useContext()
 
-  const { data, isLoading } = api.tournament.getTournamentPlayerGroupGames.useQuery({
-    tournamentId,
-    playerId
-  }, {
-    enabled: tournamentId !== undefined
+  const { data: tournament, isLoading } = api.tournament.getTournament.useQuery({
+    id: tournamentId
   })
+
+  const playerGames = tournament.games.filter(game => [game.player1Id, game.player2Id].includes(playerId))
 
   if (isLoading) {
     return <div>Loading..</div>
   }
+
   function onSuccess(data: Game, variables, context) {
-    utils.tournament.getTournamentPlayerGroupGames.setData({
-      tournamentId,
-      playerId
+    utils.tournament.getTournament.setData({
+      id: tournamentId
     }, (oldData) => {
-      return oldData.map(game => {
-        if (game.id == data.id) {
-          return {
-            ...game,
-            player1Points: data.player1Points,
-            player2Points: data.player2Points,
-            time: data.time
+      return {
+        ...oldData,
+        games: oldData.games.map(game => {
+          if (game.id == data.id) {
+            return {
+              ...game,
+              player1Points: data.player1Points,
+              player2Points: data.player2Points,
+              time: data.time
+            }
           }
-        }
-        return game
-      })
+          return game
+        })
+      }
     })
   }
 
@@ -69,7 +77,7 @@ export default function PlayerGroupGames() {
         <Paper>
           <Box padding={2}>
             <Link href={`/tournaments/${router.query.id}`}>
-              <Typography sx={{ textDecoration: 'underline' }} fontSize={18} padding={2}>/tournaments/{data[0]?.Tournament.name}</Typography>
+              <Typography sx={{ textDecoration: 'underline' }} fontSize={18} padding={2}>/tournaments/{tournament.name}</Typography>
             </Link>
             <List disablePadding>
               <ListItem>
@@ -89,7 +97,7 @@ export default function PlayerGroupGames() {
                 </Grid>
               </ListItem>
               <Divider />
-              {data.map(game => {
+              {playerGames.map(game => {
                 return <Box key={game.id}>
                   <ListItem>
                     <Grid container>
