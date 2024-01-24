@@ -1,6 +1,6 @@
 import { Box, Button, Collapse, Container, Divider, List, ListItem, ListItemButton, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/router";
-import { GameType, TournamentType, api } from "~/utils/api";
+import { api } from "~/utils/api";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import Layout from "~/components/Layout";
@@ -19,19 +19,7 @@ import PanoramaFishEyeIcon from '@mui/icons-material/PanoramaFishEye';
 import KnockoutTree from "~/components/KnockoutTree";
 import { Game } from "@prisma/client";
 import assert from "assert";
-
-
-type RenderTablesProps = {
-  tournament: TournamentType,
-  setModalState: Dispatch<SetStateAction<boolean>>,
-  setSelectedGame: Dispatch<SetStateAction<string | undefined>>,
-  dark: boolean,
-  userEmail: string
-}
-
-type ViewPropsType = {
-  tournament: TournamentType
-}
+import { GameWithPlayers, TournamentWithPlayersAndGamesWithPlayers } from "~/types";
 
 const style = {
   position: 'absolute',
@@ -93,37 +81,26 @@ const columns: (
     ];
   }
 
-const RenderTables = (
-  {
-    tournament,
-    setModalState,
-    setSelectedGame,
-    dark,
-    userEmail
-  }: RenderTablesProps) => {
+const RenderTables = ({
+  tournament,
+  setModalState,
+  setSelectedGame,
+  dark,
+  userEmail
+}: {
+  tournament: TournamentWithPlayersAndGamesWithPlayers,
+  setModalState: Dispatch<SetStateAction<boolean>>,
+  setSelectedGame: Dispatch<SetStateAction<string | undefined>>,
+  dark: boolean,
+  userEmail: string
+}) => {
 
-  const tournamentRounds: { index: number, games: GameType[] }[] = []
+  const tournamentRounds: { index: number, games: (typeof tournament.games) }[] = []
   const currentDate = new Date()
   const timeDiff = currentDate.getTime() - tournament.startDate.getTime()
   const currentRoundIndex = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * (tournament.roundInterval === 'week' ? 7 : 1)))
   const [open, setOpen] = useState<boolean[]>([])
-  const games = tournament.games.map(game => {
-    let winner = 'To be played'
-    if (game.player1Points > game.player2Points) {
-      winner = game.player1.name
-    } else if (game.player1Points < game.player2Points) {
-      winner = game.player2.name
-    } else if (game.player1Points == game.player2Points && game.player1Points > 0) {
-      winner = 'Draw'
-    }
-    return {
-      id: game.id,
-      poolId: game.poolId,
-      player1: game.player1,
-      player2: game.player2,
-      winner
-    }
-  })
+
   const selectRound = (roundIndex: number) => {
     setOpen(open.map((state, index) => {
       if (index != roundIndex) {
@@ -149,41 +126,45 @@ const RenderTables = (
   for (let pool = 0; pool < tournament.numRounds; pool++) {
     tournamentRounds.push({
       index: pool,
-      games: games.filter(game => game.poolId == 'A')
+      games: tournament.games.filter(game => game.poolId == 'A')
     })
   }
 
-  return <Stack spacing={2}>
-    {tournamentRounds.map(round => {
-      return <Paper key={`${round.index}`}>
-        <Box padding={2}>
-          <Stack direction='row' justifyContent='space-between'>
-            <span>
-              Round {round.index}
-            </span>
-            <Button
-              onClick={() => selectRound(round.index)}
-            >
-              {open[round.index] ? <ExpandLess /> : <ExpandMore />}
-            </Button>
-          </Stack>
-          <Collapse in={open[round.index]} timeout="auto" unmountOnExit>
-            <hr />
-            <DataGrid
-              columns={columns(setModalState, setSelectedGame, userEmail)}
-              rows={round.games ?? []}
-              disableRowSelectionOnClick
-              pageSizeOptions={[5]}
-              sx={graphSx(dark)}
-            />
-          </Collapse>
-        </Box>
-      </Paper>
-    })}
-  </Stack>
+  return (
+    <Stack spacing={2}>
+      {tournamentRounds.map(round => {
+        return (
+          <Paper key={`${round.index}`}>
+            <Box padding={2}>
+              <Stack direction='row' justifyContent='space-between'>
+                <span>
+                  Round {round.index}
+                </span>
+                <Button
+                  onClick={() => selectRound(round.index)}
+                >
+                  {open[round.index] ? <ExpandLess /> : <ExpandMore />}
+                </Button>
+              </Stack>
+              <Collapse in={open[round.index]} timeout="auto" unmountOnExit>
+                <hr />
+                <DataGrid
+                  columns={columns(setModalState, setSelectedGame, userEmail)}
+                  rows={round.games ?? []}
+                  disableRowSelectionOnClick
+                  pageSizeOptions={[5]}
+                  sx={graphSx(dark)}
+                />
+              </Collapse>
+            </Box>
+          </Paper>
+        )
+      })}
+    </Stack>
+  )
 }
 
-function RoundRobbinView({ tournament }: ViewPropsType) {
+function RoundRobbinView({ tournament }: { tournament: TournamentWithPlayersAndGamesWithPlayers }) {
   const [modalState, setModalState] = useState(false)
   const [selectedGame, setSelectedGame] = useState<string | undefined>()
   const [player1Points, setPlayer1Points] = useState(0)
@@ -290,15 +271,14 @@ function RoundRobbinView({ tournament }: ViewPropsType) {
   </Box>
 }
 
-function GroupStageTables({ tournament, games }: { tournament: TournamentType, games: GameType[] }) {
+function GroupStageTables({ tournament, games }: { tournament: TournamentWithPlayersAndGamesWithPlayers, games: GameWithPlayers[] }) {
   const pools = games.reduce((acc, game) => {
     if (!(game.poolId in acc)) {
       acc[game.poolId] = []
     }
     acc[game.poolId].push(game)
     return acc
-  }, {} as { [key: string]: GameType[] })
-  groupItemsByKey<GameType>(games, 'poolId')
+  }, {} as { [key: string]: GameWithPlayers[] })
   const poolIds = Object.keys(pools)
   const router = useRouter()
 
@@ -313,12 +293,12 @@ function GroupStageTables({ tournament, games }: { tournament: TournamentType, g
       }
     })
 
-    const wonGame = (game: GameType, playerId: string) => {
+    const wonGame = (game: GameWithPlayers, playerId: string) => {
       return (game.player1Id == playerId && game.player1Points > game.player2Points)
         || (game.player1Id == playerId && game.player1Points < game.player2Points)
     }
 
-    const draw = (game: GameType) => {
+    const draw = (game: GameWithPlayers) => {
       return game.player1Points == game.player2Points
     }
 
@@ -381,7 +361,7 @@ function GroupStageTables({ tournament, games }: { tournament: TournamentType, g
   )
 }
 
-function MultiStageView({ tournament }: ViewPropsType) {
+function MultiStageView({ tournament }: { tournament: TournamentWithPlayersAndGamesWithPlayers }) {
 
   const groupGames = tournament.games.filter(game => game.type == 'group')
   const knockoutGames = tournament.games.filter(game => game.type == 'knockout')

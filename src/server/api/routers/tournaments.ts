@@ -168,6 +168,7 @@ export const tournamentRouter = createTRPCRouter({
           id: input.id
         },
         include: {
+          players: true,
           games: {
             include: {
               player1: true,
