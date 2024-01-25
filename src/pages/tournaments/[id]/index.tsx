@@ -278,7 +278,7 @@ function GroupStageTables({ tournament, games }: { tournament: TournamentWithPla
     acc[game.poolId].push(game)
     return acc
   }, {} as { [key: string]: GameWithPlayers[] })
-  const poolIds = Object.keys(pools)
+  const poolIds = Object.keys(pools).sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0))
   const router = useRouter()
 
   const renderPool = (poolId: string, pool: Game[]) => {
