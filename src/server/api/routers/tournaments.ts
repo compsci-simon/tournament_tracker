@@ -110,6 +110,10 @@ const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
             id: winnerId
           }
         }
+      },
+      include: {
+        player1: true,
+        player2: true
       }
     })
   } else {
@@ -123,6 +127,10 @@ const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
             id: winnerId
           }
         }
+      },
+      include: {
+        player1: true,
+        player2: true
       }
     })
   }
@@ -373,7 +381,7 @@ export const tournamentRouter = createTRPCRouter({
           await startKnockoutRounds(ctx.prisma, updatedGame.tournamentId)
         }
       } else if (updatedGame.type == 'knockout') {
-        const nextRound = setNextRoundPlayers(ctx.prisma, updatedGame)
+        const nextRound = await setNextRoundPlayers(ctx.prisma, updatedGame)
         return {
           updatedGame,
           nextRound

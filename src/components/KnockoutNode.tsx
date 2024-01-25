@@ -22,10 +22,10 @@ function KnockoutNode({ data: game }: { data: GameWithPlayers }) {
   const onSuccess = (data: SetGameType) => {
     utils.tournament.getTournament.setData({
       id: data.updatedGame.tournamentId
-    }, (oldData: TournamentWithGamesWithPlayers) => {
+    }, (oldData) => {
       const updatedGame = data.updatedGame
       const nextRound = data.nextRound
-      return {
+      const newData = {
         ...oldData,
         games: oldData.games.map((game) => {
           if (game.id == updatedGame?.id) {
@@ -36,6 +36,7 @@ function KnockoutNode({ data: game }: { data: GameWithPlayers }) {
           return game
         })
       }
+      return newData
     })
   }
 

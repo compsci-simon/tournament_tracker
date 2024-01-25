@@ -9,7 +9,6 @@ import { ThemeContext } from "../../_app";
 import { useSession } from "next-auth/react";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import TabPanel from "~/components/TabPanel";
-import { groupItemsByKey } from "~/utils/utils";
 
 import ReplayIcon from '@mui/icons-material/Replay';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
