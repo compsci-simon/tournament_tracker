@@ -95,6 +95,7 @@ model UserGame {
     @@id([userId, gameId])
 }
 
+// TODO: We need to remove the round field.
 model Game {
     id            String      @id @default(cuid())
     time          DateTime    @default(now())

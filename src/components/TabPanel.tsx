@@ -9,10 +9,11 @@ interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+  padding: number
 }
 
 function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+  const { children, value, index, padding, ...other } = props;
 
   return (
     <div
@@ -21,7 +22,7 @@ function TabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: padding }}>
           {children}
         </Box>
       )}
@@ -39,7 +40,8 @@ function a11yProps(index: number) {
 type TabProps = {
   tabs: {
     title: string,
-    content: React.ReactElement
+    content: React.ReactElement,
+    padding?: number
   }[]
 }
 
@@ -60,9 +62,11 @@ export default function BasicTabs({ tabs }: TabProps) {
         </Tabs>
       </Box>
       {tabs.map((tab, index) => {
-        return <TabPanel key={`${index}`} value={value} index={index}>
-          {tab.content}
-        </TabPanel>
+        return (
+          <TabPanel key={`${index}`} value={value} index={index} padding={tab.padding ?? 3}>
+            {tab.content}
+          </TabPanel>
+        )
       })}
     </Box>
   );

@@ -108,10 +108,10 @@ export default function HomePage() {
                 <Stack direction='row' spacing={1}>
                   <ShowChartIcon />
                   <Typography variant='overline' sx={{ fontSize: '9px' }}>
-                    Top players
+                    Biggest gainers of the week
                   </Typography>
                 </Stack>
-                {stats?.playerRankingHistories.map((playerHistory, index) => {
+                {stats?.weeklyGainers.map((playerHistory, index) => {
                   if (index > 4) {
                     return null
                   }
@@ -152,6 +152,40 @@ export default function HomePage() {
             </Box>
           </Paper>
         </Grid>
+
+        <Grid item md={6}>
+          <Paper>
+            <Box padding={2} minHeight={400}>
+              <Stack spacing={2}>
+                <Stack direction='row' spacing={1}>
+                  <ShowChartIcon />
+                  <Typography variant='overline' sx={{ fontSize: '9px' }}>
+                    Top players of all time
+                  </Typography>
+                </Stack>
+                {stats?.allTimeBest.map((rating, index) => {
+                  return (
+                    <Stack
+                      key={`${index}`}
+                      direction='row'
+                      spacing={1}
+                      alignItems='center'
+                      justifyContent='space-between'
+                    >
+                      <img src={rating.avatar} style={{ width: '60px' }} />
+                      <Typography
+                        fontSize={20}
+                      >
+                        #{index + 1} {rating.name} - {rating.rating.toFixed(3)}
+                      </Typography>
+                    </Stack>
+                  )
+                })}
+              </Stack>
+            </Box>
+          </Paper>
+        </Grid>
+
 
       </Grid>
     </Box>

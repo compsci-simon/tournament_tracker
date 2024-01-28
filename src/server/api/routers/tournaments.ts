@@ -2,7 +2,7 @@ import { Game, PrismaClient } from "@prisma/client"
 import { TRPCError } from "@trpc/server"
 import assert from "assert"
 import { z } from "zod"
-import { calculateNewRatings, getLeadersFromList, mostGamesUser, playerRatingHistories, weeksBiggestGainer } from "~/utils/tournament"
+import { calculateNewRatings, getAllTimeTopPlayers, getLeadersFromList, mostGamesUser, playerRatingHistories, weeksBiggestGainer } from "~/utils/tournament"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
 
 const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
@@ -414,12 +414,6 @@ export const tournamentRouter = createTRPCRouter({
           player: true
         }
       })
-
-      const x = await ctx.prisma.user.findMany({
-        include: {
-          _count: { select: { userGames: true } }
-        },
-      })
       const numPlayedGames = (games: Game[]) => {
         return games.filter(g => { return g.player1Points > 0 || g.player2Points > 0 }).length
       }
@@ -429,7 +423,8 @@ export const tournamentRouter = createTRPCRouter({
         numPlayers,
         mostGames: mostGamesUser(players, games),
         biggestGainer: weeksBiggestGainer(players, ratings),
-        playerRankingHistories: playerRatingHistories(players, ratings)
+        weeklyGainers: playerRatingHistories(players, ratings),
+        allTimeBest: await getAllTimeTopPlayers(ctx.prisma)
       }
     }),
   tournamentsStats: protectedProcedure

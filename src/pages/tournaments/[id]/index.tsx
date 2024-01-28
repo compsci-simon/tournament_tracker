@@ -372,7 +372,8 @@ function MultiStageView({ tournament }: { tournament: TournamentWithPlayersAndGa
     },
     {
       title: 'Knockout',
-      content: <KnockoutTree games={knockoutGames} />
+      content: <KnockoutTree games={knockoutGames} />,
+      padding: 0
     },
   ]
 

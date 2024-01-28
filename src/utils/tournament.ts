@@ -1,12 +1,12 @@
-import { Game, Rating, User } from "@prisma/client";
+import { Game, PrismaClient, Rating, User } from "@prisma/client";
 import { MarkerType, Node } from "reactflow";
 import { v4 as uuidv4 } from 'uuid'
-import { GameWithPlayers, RatingWithPlayer } from "~/types";
+import { GameWithPlayers, MinimalGame, RatingWithPlayer } from "~/types";
 
 const kFactor = 25
 
 export const roundRobinScheduleGames: (players: string[]) => {
-  schedule: GameScheduleType[],
+  schedule: MinimalGame[],
   numRounds: number
 } = (players) => {
 
@@ -15,7 +15,7 @@ export const roundRobinScheduleGames: (players: string[]) => {
     players.push('')
   }
   const n = players.length
-  const gameSchedule: GameScheduleType[] = []
+  const gameSchedule: MinimalGame[] = []
 
   const rounds = (n - 1)
   for (let i = 0; i < rounds; i++) {
@@ -24,7 +24,7 @@ export const roundRobinScheduleGames: (players: string[]) => {
     }
     for (let j = 0; j < rounds / 2; j++) {
       gameSchedule.push({
-        round: i,
+        poolId: String.fromCharCode(65 + i),
         player1Id: players[j],
         player2Id: players[n - j - 1]
       })
@@ -181,6 +181,36 @@ export const playerRatingHistories = (players: User[], ratings: RatingWithPlayer
   return Object.values(historiesMap).sort((a, b) => b.current - a.current)
 }
 
+export const getAllTimeTopPlayers = async (prisma: PrismaClient) => {
+  // { name: string, history: number[], current: number, avatar: string }
+  const ratings = await prisma.rating.findMany()
+  const groupedRatings = ratings.reduce((acc, rating) => {
+    if (!(rating.userId in acc)) {
+      acc[rating.userId] = []
+    }
+    acc[rating.userId].push(rating)
+    return acc
+  }, {} as { [key: string]: Rating[] })
+  Object.keys(groupedRatings).forEach(key => {
+    groupedRatings[key].sort((ratingA, ratingB) => ratingB.time.getTime() - ratingA.time.getTime())
+  })
+  const sortedRatings = Object.values(groupedRatings).sort((listA, listB) => listB.at(0).rating - listA.at(0).rating)
+  const topRatedPlayers = []
+  const users = await prisma.user.findMany()
+  for (let i = 0; i < 5; i++) {
+    const ratingsGroup = sortedRatings.at(i)
+    const rating = ratingsGroup.at(0)
+    if (!rating) break
+    const user = users.find(u => u.id == rating.userId)
+    topRatedPlayers.push({
+      name: user.name,
+      avatar: user.avatar,
+      rating: rating.rating,
+    })
+  }
+  return topRatedPlayers
+}
+
 function calculateExpectedOutcome(playerRatingA: number, playerRatingB: number) {
   return 1 / (1 + Math.pow(10, (playerRatingB - playerRatingA) / 400))
 }
@@ -221,7 +251,7 @@ const getGroupSize = (totalPlayers: number) => {
 }
 
 export const scheduleMultiStageGames = (players: string[]) => {
-  const matches: any[] = []
+  const matches: Game[] = []
   const totalPlayers = players.length
   const groupSize = getGroupSize(totalPlayers)
   const baseGroup = 'A'
@@ -240,11 +270,11 @@ export const scheduleMultiStageGames = (players: string[]) => {
         poolId: String.fromCharCode(baseGroup.charCodeAt(0) + group),
         player1Id: game.player1Id,
         player2Id: game.player2Id,
-        round: game.round,
         time: new Date(),
         player1Points: 0,
         player2Points: 0,
         nextRoundId: undefined,
+        round: undefined,
         level: undefined
       })
     })
@@ -264,7 +294,7 @@ export const scheduleMultiStageGames = (players: string[]) => {
         type: 'knockout',
         tournamentId: '',
         level,
-        round: groupSize + level,
+        round: level,
         time: new Date(),
         poolId: undefined,
         player1Id: undefined,
