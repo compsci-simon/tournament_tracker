@@ -42,8 +42,8 @@ export default function Page() {
   }
 
   useEffect(() => {
-    setPlayer1Points(game.player1Points)
-    setPlayer2Points(game.player2Points)
+    setPlayer1Points(game?.player1Points ?? 0)
+    setPlayer2Points(game?.player2Points ?? 0)
   }, [game])
 
 

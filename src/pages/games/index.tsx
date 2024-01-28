@@ -1,10 +1,11 @@
-import { Box, Paper, Typography } from "@mui/material"
+import { Box, Button, Paper, Typography } from "@mui/material"
 import { DataGrid, GridColDef } from "@mui/x-data-grid"
 import { useContext } from "react"
 import Layout from "~/components/Layout"
 import { api } from "~/utils/api"
 import { ThemeContext } from "../_app"
 import { graphSx } from "~/utils/constants"
+import Link from "next/link"
 
 const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID' },
@@ -54,6 +55,22 @@ const columns: GridColDef[] = [
     renderCell(params: { row: { time: Date } }) {
       return <span>{params.row.time.toDateString()}</span>
     }
+  },
+  {
+    field: 'none',
+    headerName: 'Delete game',
+    width: 200,
+    renderCell(params) {
+      return (
+        <Link href={`/games/${params.row.id}`}>
+          <Button
+            variant='outlined'
+          >
+            View
+          </Button>
+        </Link>
+      )
+    },
   }
 ]
 
