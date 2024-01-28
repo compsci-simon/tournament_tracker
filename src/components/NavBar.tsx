@@ -37,7 +37,7 @@ function ResponsiveAppBar() {
     }
   }, [session])
   const { data: notifications } = api.notifications.getPlayerNotifications.useQuery({
-    playerEmail: session.user.email
+    playerEmail: session?.user?.email
   })
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -176,7 +176,7 @@ function ResponsiveAppBar() {
                 onClose={handleCloseNotificationsMenu}
               >
                 {(notifications ?? []).map(notification => (
-                  <Link key={notification.id} href={`/${notification.game.id}`}>
+                  <Link key={notification.id} href={`/games/${notification.game.id}`}>
                     <MenuItem onClick={handleCloseNotificationsMenu}>
                       {notification.game.player1.email == session.user.email ?
                         <Typography textAlign="center">{`${notification.game.player2.name} entered a score against you.`}</Typography>

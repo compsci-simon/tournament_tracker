@@ -141,7 +141,7 @@ model TournamentJob {
 
 model GameNotification {
     id            String  @id @default(cuid())
-    game          Game    @relation(fields: [gameId], references: [id])
+    game          Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
     gameId        String
     seenByPlayer1 Boolean @default(false)
     seenByPlayer2 Boolean @default(false)

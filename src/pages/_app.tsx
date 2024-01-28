@@ -64,25 +64,27 @@ const MyApp: AppType = ({
   const getLayout = Component.getLayout ?? ((page) => page)
   const [dark, setDark] = useState(true)
 
-  return <ThemeContext.Provider value={{ dark, setDark }}>
-    <SessionProvider session={session as Session}>
-      <SnackbarProvider>
-        <ThemeProvider theme={dark ? theme : {}}>
-          <CssBaseline />
-          {Component.auth ?
-            Component.auth !== true && Component.auth.role ?
-              <AuthAdmin>
-                {getLayout(<Component {...pageProps} />)}
-              </AuthAdmin>
-              :
-              <Auth>
-                {getLayout(<Component {...pageProps} />)}
-              </Auth>
-            : getLayout(<Component {...pageProps} />)}
-        </ThemeProvider>
-      </SnackbarProvider>
-    </SessionProvider>
-  </ThemeContext.Provider>
+  return (
+    <ThemeContext.Provider value={{ dark, setDark }}>
+      <SessionProvider session={session as Session}>
+        <SnackbarProvider>
+          <ThemeProvider theme={dark ? theme : {}}>
+            <CssBaseline />
+            {Component.auth ?
+              Component.auth !== true && Component.auth.role ?
+                <AuthAdmin>
+                  {getLayout(<Component {...pageProps} />)}
+                </AuthAdmin>
+                :
+                <Auth>
+                  {getLayout(<Component {...pageProps} />)}
+                </Auth>
+              : getLayout(<Component {...pageProps} />)}
+          </ThemeProvider>
+        </SnackbarProvider>
+      </SessionProvider>
+    </ThemeContext.Provider>
+  )
 };
 
 interface AuthProps {

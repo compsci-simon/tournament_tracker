@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { calculateNewRatings } from "~/utils/tournament";
 
 export const gamesRouter = createTRPCRouter({
@@ -139,4 +139,26 @@ export const gamesRouter = createTRPCRouter({
       })
       return newGame
     }),
+  getGame: protectedProcedure
+    .input(z.object({ gameId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return await ctx.prisma.game.findFirst({
+        where: {
+          id: input.gameId
+        },
+        include: {
+          player1: true,
+          player2: true
+        }
+      })
+    }),
+  deleteGame: protectedProcedure
+    .input(z.object({ gameId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return await ctx.prisma.game.delete({
+        where: {
+          id: input.gameId
+        }
+      })
+    })
 });
