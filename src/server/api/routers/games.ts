@@ -93,7 +93,7 @@ export const gamesRouter = createTRPCRouter({
         player1RatingChange,
         player2RatingChange,
       } = calculateNewRatings(player1Rating.rating, player2Rating.rating, player1Score > player2Score)
-      return await ctx.prisma.game.create({
+      const newGame = await ctx.prisma.game.create({
         data: {
           player1Points: input.player1Score,
           player2Points: input.player2Score,
@@ -121,5 +121,22 @@ export const gamesRouter = createTRPCRouter({
           }
         }
       })
+      const userThatEnteredScore = await ctx.prisma.user.findFirst({
+        where: {
+          email: ctx.session.user.email
+        }
+      })
+      await ctx.prisma.gameNotification.create({
+        data: {
+          seenByPlayer1: newGame.player1Id == userThatEnteredScore.id,
+          seenByPlayer2: newGame.player2Id == userThatEnteredScore.id,
+          game: {
+            connect: {
+              id: newGame.id
+            }
+          }
+        }
+      })
+      return newGame
     }),
 });

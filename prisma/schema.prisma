@@ -97,18 +97,18 @@ model UserGame {
 
 // TODO: We need to remove the round field.
 model Game {
-    id            String      @id @default(cuid())
-    time          DateTime    @default(now())
+    id            String             @id @default(cuid())
+    time          DateTime           @default(now())
     round         Int?
-    Tournament    Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+    Tournament    Tournament?        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
     tournamentId  String?
-    player1Points Int         @default(0)
-    player2Points Int         @default(0)
+    player1Points Int                @default(0)
+    player2Points Int                @default(0)
     player1Id     String?
-    player1       User?       @relation("player1", fields: [player1Id], references: [id])
+    player1       User?              @relation("player1", fields: [player1Id], references: [id])
     player2Id     String?
-    player2       User?       @relation("player2", fields: [player2Id], references: [id])
-    type          String      @default("group")
+    player2       User?              @relation("player2", fields: [player2Id], references: [id])
+    type          String             @default("group")
     level         Int?
     // The `group` field indicates the pool to which this game belongs
     poolId        String?
@@ -116,6 +116,7 @@ model Game {
     userGame      UserGame[]
     // nextRoundId is the ID of the next game, given this is a knockout game
     nextRoundId   String?
+    notifications GameNotification[]
 }
 
 model Tournament {
@@ -136,4 +137,12 @@ model TournamentJob {
     id           String     @id @default(cuid())
     tournament   Tournament @relation(fields: [tournamentId], references: [id])
     tournamentId String     @unique
+}
+
+model GameNotification {
+    id            String  @id @default(cuid())
+    game          Game    @relation(fields: [gameId], references: [id])
+    gameId        String
+    seenByPlayer1 Boolean @default(false)
+    seenByPlayer2 Boolean @default(false)
 }
