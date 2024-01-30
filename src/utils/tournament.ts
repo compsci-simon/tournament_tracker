@@ -122,10 +122,10 @@ export const weeksBiggestGainer = (players: User[], ratings: RatingWithPlayer[])
     const playerRatings = ratings.filter(r => r.player.id == player.id)
     let increase = 0
     if (playerRatings.length == 1) {
-      increase = (playerRatings[0]?.rating ?? 1200) - 1200
+      increase = (playerRatings.at(0)?.rating ?? 1200) - 1200
     } else if (playerRatings.length > 1) {
-      const start = playerRatings.sort((a, b) => a.time.getTime() - b.time.getTime())[0]?.rating ?? 1200
-      const end = playerRatings.sort((a, b) => b.time.getTime() - a.time.getTime())[0]?.rating ?? 1200
+      const start = playerRatings.sort((a, b) => a.time.getTime() - b.time.getTime()).at(0)?.rating ?? 1200
+      const end = playerRatings.sort((a, b) => b.time.getTime() - a.time.getTime()).at(0)?.rating ?? 1200
       increase = end - start
     }
     playerIncreases.push({
@@ -162,8 +162,8 @@ export const mostGamesUser = (players: User[], games: GameWithPlayers[]) => {
   const sortedTotalGames = totalGamesArray.sort((a, b) => b.totalGames - a.totalGames)
 
   return {
-    player: `${sortedTotalGames[0]?.name ?? ''}`,
-    value: sortedTotalGames[0]?.totalGames ?? 0
+    player: `${sortedTotalGames.at(0)?.name ?? ''}`,
+    value: sortedTotalGames.at(0)?.totalGames ?? 0
   }
 }
 
@@ -182,7 +182,6 @@ export const playerRatingHistories = (players: User[], ratings: RatingWithPlayer
 }
 
 export const getAllTimeTopPlayers = async (prisma: PrismaClient) => {
-  // { name: string, history: number[], current: number, avatar: string }
   const ratings = await prisma.rating.findMany()
   const groupedRatings = ratings.reduce((acc, rating) => {
     if (!(rating.userId in acc)) {

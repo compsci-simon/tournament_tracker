@@ -26,6 +26,7 @@ export default function Page() {
       enqueueSnackbar('Successfully deleted game', { variant: 'success' })
     }
   })
+  const { mutate: setSeenByPlayer } = api.notifications.playerSawNotification.useMutation()
   const context = api.useContext()
 
   const onSuccess = (data) => {
@@ -46,6 +47,9 @@ export default function Page() {
     setPlayer2Points(game?.player2Points ?? 0)
   }, [game])
 
+  useEffect(() => {
+    setSeenByPlayer({ gameId })
+  }, [])
 
   if (isLoading) return null
 

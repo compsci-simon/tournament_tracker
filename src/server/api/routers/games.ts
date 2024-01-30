@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { calculateNewRatings } from "~/utils/tournament";
+import { createGameNotification } from "./routerUtils";
 
 export const gamesRouter = createTRPCRouter({
   getAll: publicProcedure
@@ -119,24 +120,13 @@ export const gamesRouter = createTRPCRouter({
               { rating: player2NewRating, userId: player2Id, ratingChange: player2RatingChange },
             ]
           }
+        },
+        include: {
+          player1: true,
+          player2: true
         }
       })
-      const userThatEnteredScore = await ctx.prisma.user.findFirst({
-        where: {
-          email: ctx.session.user.email
-        }
-      })
-      await ctx.prisma.gameNotification.create({
-        data: {
-          seenByPlayer1: newGame.player1Id == userThatEnteredScore.id,
-          seenByPlayer2: newGame.player2Id == userThatEnteredScore.id,
-          game: {
-            connect: {
-              id: newGame.id
-            }
-          }
-        }
-      })
+      createGameNotification(newGame, 'You are involved in a new game that was created.', ctx)
       return newGame
     }),
   getGame: protectedProcedure
@@ -160,5 +150,5 @@ export const gamesRouter = createTRPCRouter({
           id: input.gameId
         }
       })
-    })
+    }),
 });

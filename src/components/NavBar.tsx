@@ -14,6 +14,8 @@ import MenuItem from '@mui/material/MenuItem';
 import MenuIcon from '@mui/icons-material/Menu';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import NotificationAddIcon from '@mui/icons-material/NotificationAdd';
+import CircleNotificationsIcon from '@mui/icons-material/CircleNotifications';
 import { useRouter } from 'next/router';
 
 import ThemeSwitch from './ThemeSwitch';
@@ -61,6 +63,12 @@ function ResponsiveAppBar() {
   const handleCloseNotificationsMenu = () => {
     setAnchorElNotifications(null)
   }
+
+  const unseenNotifications = notifications?.some(notification =>
+    session.user.email == notification.game.player1.email ?
+      !notification.seenByPlayer1 :
+      !notification.seenByPlayer2
+  )
 
   return (
     <AppBar position="static">
@@ -140,7 +148,7 @@ function ResponsiveAppBar() {
             ))}
           </Box>
 
-          <Stack direction='row' alignItems='center' spacing={1}>
+          <Stack direction='row' alignItems='center' spacing={2}>
             {/* Theme switch */}
             <ThemeSwitch defaultChecked value={dark} onChange={() => setDark(!dark)} />
 
@@ -155,8 +163,11 @@ function ResponsiveAppBar() {
             {/* Notifications */}
             <Box sx={{ flexGrow: 0 }}>
               <Tooltip title="Open settings">
-                <IconButton onClick={handleOpenNotificationsMenu} sx={{ p: 0 }}>
-                  <NotificationsIcon fontSize='large' />
+                <IconButton onClick={handleOpenNotificationsMenu} sx={{ p: 1 }}>
+                  {unseenNotifications ?
+                    <NotificationAddIcon fontSize='medium' /> :
+                    <NotificationsIcon fontSize='medium' />
+                  }
                 </IconButton>
               </Tooltip>
               <Menu
@@ -175,17 +186,32 @@ function ResponsiveAppBar() {
                 open={Boolean(anchorElNotifications)}
                 onClose={handleCloseNotificationsMenu}
               >
-                {(notifications ?? []).map(notification => (
-                  <Link key={notification.id} href={`/games/${notification.game.id}`}>
-                    <MenuItem onClick={handleCloseNotificationsMenu}>
-                      {notification.game.player1.email == session.user.email ?
-                        <Typography textAlign="center">{`${notification.game.player2.name} entered a score against you.`}</Typography>
-                        :
-                        <Typography textAlign="center">{`${notification.game.player1.name} entered a score against you.`}</Typography>
-                      }
-                    </MenuItem>
-                  </Link>
-                ))}
+                <Stack direction='row' justifyContent='space-between' paddingX={1} alignContent='center'>
+                  <Typography variant='h6'>Notifications</Typography>
+                  <Button size='small'>
+                    Mark all as read
+                  </Button>
+                </Stack>
+                <hr />
+                {(notifications ?? [])
+                  .map(notification => {
+                    const seenByPlayer = session.user.email == notification.game.player1.email ? notification.seenByPlayer1
+                      : notification.seenByPlayer2
+                    const otherPlayerName = session.user.email == notification.game.player1.email ? notification.game.player2.name
+                      : notification.game.player1.name
+                    return (
+                      <Link key={notification.id} href={`/games/${notification.game.id}`}>
+                        <MenuItem sx={{ paddingY: 0.5 }} onClick={handleCloseNotificationsMenu}>
+                          <Stack direction='row' spacing={1}>
+                            {!seenByPlayer && <CircleNotificationsIcon color='error' />}
+                            <Typography color={seenByPlayer ? '#B2BABB' : 'white'} variant='subtitle2' textAlign="center">
+                              New quick game vs {otherPlayerName} - <Typography variant='caption'>{notification.game.time.toLocaleString()}</Typography>
+                            </Typography>
+                          </Stack>
+                        </MenuItem>
+                      </Link>
+                    )
+                  })}
               </Menu>
             </Box>
 

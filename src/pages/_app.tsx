@@ -16,7 +16,11 @@ const theme = createTheme({
       main: '#90caf9', // Primary color
     },
     secondary: {
-      main: '#f48fb1', // Secondary color
+      main: '#FBFCFA', // Secondary color
+    },
+
+    error: {
+      main: '#E57373'
     },
     background: {
       default: '#404258', // Updated default background color

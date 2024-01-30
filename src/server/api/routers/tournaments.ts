@@ -1,11 +1,10 @@
-import { Game, Prisma, PrismaClient } from "@prisma/client"
+import { Game, PrismaClient } from "@prisma/client"
 import { TRPCError } from "@trpc/server"
 import assert from "assert"
 import { z } from "zod"
 import { calculateNewRatings, getAllTimeTopPlayers, getLeadersFromList, mostGamesUser, playerRatingHistories, weeksBiggestGainer } from "~/utils/tournament"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
-import { DefaultArgs } from "@prisma/client/runtime"
-import { GameWithPlayers } from "~/types"
+import { createGameNotification } from "./routerUtils"
 
 const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
   const groupGames = await prisma.game.findMany({
@@ -136,53 +135,6 @@ const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
       }
     })
   }
-}
-
-const getUser = async (ctx: {
-  session: {
-    user: {
-      role: string;
-    } & {
-      name?: string;
-      email?: string;
-      image?: string;
-    };
-    expires: string;
-  };
-  prisma: PrismaClient<Prisma.PrismaClientOptions, never, Prisma.RejectOnNotFound | Prisma.RejectPerOperation, DefaultArgs>;
-}) => {
-  return await ctx.prisma.user.findFirst({
-    where: {
-      email: ctx.session.user.email
-    }
-  })
-}
-
-const createGameNotification = async (game: GameWithPlayers, ctx: {
-  session: {
-    user: {
-      role: string;
-    } & {
-      name?: string;
-      email?: string;
-      image?: string;
-    };
-    expires: string;
-  };
-  prisma: PrismaClient<Prisma.PrismaClientOptions, never, Prisma.RejectOnNotFound | Prisma.RejectPerOperation, DefaultArgs>;
-}) => {
-  const user = await getUser(ctx)
-  await ctx.prisma.gameNotification.create({
-    data: {
-      game: {
-        connect: {
-          id: game.id
-        }
-      },
-      seenByPlayer1: user.id == game.player1Id,
-      seenByPlayer2: user.id == game.player2Id,
-    }
-  })
 }
 
 export const tournamentRouter = createTRPCRouter({
@@ -329,7 +281,6 @@ export const tournamentRouter = createTRPCRouter({
           player2: true,
         }
       })
-      const user = await getUser(ctx)
       const player1 = game?.player1
       const player2 = game?.player2
       if (!(player1 && player2)) {
@@ -358,7 +309,7 @@ export const tournamentRouter = createTRPCRouter({
             player2Points: 0,
           }
         })
-        createGameNotification(game, ctx)
+        createGameNotification(game, 'Game score edited', ctx)
         return {
           updatedGame,
           nextRound: null
@@ -431,7 +382,7 @@ export const tournamentRouter = createTRPCRouter({
           poolId: true
         }
       })
-      createGameNotification(updatedGame, ctx)
+      createGameNotification(updatedGame, 'Game score edited', ctx)
       if (updatedGame.type == 'group') {
         const canStart = await canStartKnockoutRounds(ctx.prisma, updatedGame.tournamentId)
         if (canStart) {
@@ -471,12 +422,9 @@ export const tournamentRouter = createTRPCRouter({
           player: true
         }
       })
-      const numPlayedGames = (games: Game[]) => {
-        return games.filter(g => { return g.player1Points > 0 || g.player2Points > 0 }).length
-      }
 
       return {
-        numGames: numPlayedGames(games),
+        numGames: games.filter(g => { return g.player1Points > 0 || g.player2Points > 0 }).length,
         numPlayers,
         mostGames: mostGamesUser(players, games),
         biggestGainer: weeksBiggestGainer(players, ratings),
