@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { createTRPCRouter, protectedProcedure } from '../trpc'
 import { getUser } from './routerUtils'
-import { NotificationImportantSharp } from '@mui/icons-material'
 
 export const notificationsRouter = createTRPCRouter({
   getPlayerNotifications: protectedProcedure
