@@ -1,10 +1,12 @@
-import { Game, PrismaClient } from "@prisma/client"
+import { Game, PrismaClient, Rating } from "@prisma/client"
 import { TRPCError } from "@trpc/server"
 import assert from "assert"
 import { z } from "zod"
 import { calculateNewRatings, getAllTimeTopPlayers, getLeadersFromList, mostGamesUser, playerRatingHistories, weeksBiggestGainer } from "~/utils/tournament"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
 import { createGameNotification } from "./routerUtils"
+import { TextRotationAngledown } from "@mui/icons-material"
+import { findStreakFromRatings } from "~/utils/utils"
 
 const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
   const groupGames = await prisma.game.findMany({
@@ -134,6 +136,39 @@ const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
         player2: true
       }
     })
+  }
+}
+
+const getLongestWinStreak = async (prisma: PrismaClient) => {
+  const allRatings = await prisma.rating.findMany()
+  const playerRatings = allRatings.reduce((acc, rating) => {
+    if (!(rating.userId in acc)) {
+      acc[rating.userId] = []
+    }
+    acc[rating.userId].push(rating)
+    return acc
+  }, {} as { [key: string]: Rating[] })
+  const playerWinStreaks: { userId: string, winStreak: number }[] = []
+  Object.entries(playerRatings).forEach(([userId, ratings]) => playerWinStreaks.push({
+    userId,
+    winStreak: findStreakFromRatings(ratings)
+  }))
+  playerWinStreaks.sort((a, b) => b.winStreak - a.winStreak)
+  const winner = playerWinStreaks.at(0)
+  if (!winner) {
+    return {
+      user: undefined,
+      streak: 0
+    }
+  }
+  const user = await prisma.user.findFirst({
+    where: {
+      id: winner.userId
+    }
+  })
+  return {
+    user,
+    streak: winner.winStreak
   }
 }
 
@@ -422,14 +457,26 @@ export const tournamentRouter = createTRPCRouter({
           player: true
         }
       })
+      const longestStreak = await getLongestWinStreak(ctx.prisma)
+      const mostRecentGame = await ctx.prisma.game.findFirst({
+        orderBy: {
+          time: 'asc'
+        },
+        include: {
+          player1: true,
+          player2: true
+        }
+      })
 
       return {
         numGames: games.filter(g => { return g.player1Points > 0 || g.player2Points > 0 }).length,
         numPlayers,
         mostGames: mostGamesUser(players, games),
         biggestGainer: weeksBiggestGainer(players, ratings),
-        weeklyGainers: playerRatingHistories(players, ratings),
-        allTimeBest: await getAllTimeTopPlayers(ctx.prisma)
+        allTimeBest: await getAllTimeTopPlayers(ctx.prisma),
+        longestStreak,
+        mostRecentGame,
+        latestTournamentWinner: null
       }
     }),
   tournamentsStats: protectedProcedure

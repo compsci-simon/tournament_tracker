@@ -93,36 +93,42 @@ export default function Page() {
   const tabs = [
     {
       title: 'Users',
-      content: <Paper >
-        <DataGrid
-          rows={users ?? []}
-          columns={userColumns}
-          disableRowSelectionOnClick
-          pageSizeOptions={[5]}
-          sx={{ border: 0, minHeight: 500 }}
-        />
-      </Paper>
+      content: (
+        <Paper >
+          <DataGrid
+            rows={users ?? []}
+            columns={userColumns}
+            disableRowSelectionOnClick
+            pageSizeOptions={[5]}
+            sx={{ border: 0, minHeight: 500 }}
+          />
+        </Paper>
+      )
     },
     {
       title: 'Tournaments',
-      content: <Paper >
-        <DataGrid
-          rows={tournaments ?? []}
-          columns={tournamentColumns}
-          disableRowSelectionOnClick
-          slots={{
-            toolbar: CustomTournamentToolbar
-          }}
-          pageSizeOptions={[5]}
-          sx={{ border: 0, minHeight: 500 }}
-        />
-      </Paper>
+      content: (
+        <Paper >
+          <DataGrid
+            rows={tournaments ?? []}
+            columns={tournamentColumns}
+            disableRowSelectionOnClick
+            slots={{
+              toolbar: CustomTournamentToolbar
+            }}
+            pageSizeOptions={[5]}
+            sx={{ border: 0, minHeight: 500 }}
+          />
+        </Paper>
+      )
     }
   ]
 
-  return <Box padding={4}>
-    <TabPanel tabs={tabs} />
-  </Box>
+  return (
+    <Box padding={4}>
+      <TabPanel tabs={tabs} />
+    </Box>
+  )
 }
 
 Page.getLayout = function getLayout(page: React.ReactElement) {

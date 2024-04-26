@@ -2,31 +2,9 @@ import { Box, Grid, Paper, Stack, Typography } from "@mui/material";
 import { api } from "~/utils/api";
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import Layout from '../components/Layout'
-import LineChart from "~/components/LineChart";
-
-const options = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: {
-      display: false
-    },
-    y: {
-      display: false
-    },
-  },
-  plugins: {
-    legend: {
-      display: false,
-      position: 'top' as const
-    },
-    title: {
-      display: false,
-      text: '',
-      position: 'top' as const
-    },
-  }
-}
+import StraightenIcon from '@mui/icons-material/Straighten';
+import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 export default function HomePage() {
   const { data: stats } = api.tournament.overviewStats.useQuery()
@@ -70,7 +48,7 @@ export default function HomePage() {
             <Box padding={2} minHeight={122}>
               <Stack spacing={2}>
                 <Stack direction='row' spacing={1}>
-                  <ShowChartIcon />
+                  <SignalCellularAltIcon />
                   <Typography variant='overline' sx={{ fontSize: '9px' }}>
                     Most games
                   </Typography>
@@ -96,58 +74,6 @@ export default function HomePage() {
                 <Typography variant='overline'>
                   {stats?.biggestGainer?.name} - {stats?.biggestGainer?.increase.toFixed(3)}
                 </Typography>
-              </Stack>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item md={6}>
-          <Paper>
-            <Box padding={2} minHeight={400}>
-              <Stack spacing={2}>
-                <Stack direction='row' spacing={1}>
-                  <ShowChartIcon />
-                  <Typography variant='overline' sx={{ fontSize: '9px' }}>
-                    Biggest gainers of the week
-                  </Typography>
-                </Stack>
-                {stats?.weeklyGainers.map((playerHistory, index) => {
-                  if (index > 4) {
-                    return null
-                  }
-                  const data = {
-                    labels: playerHistory.history.map(x => ''),
-                    datasets: [
-                      {
-                        label: '',
-                        data: playerHistory.history,
-                        borderColor: '',
-                        backgroundColor: '',
-                        tension: 0.4,
-                        pointRadius: 0.1
-                      }
-                    ]
-                  }
-                  return <Stack
-                    key={`${index}`}
-                    direction='row'
-                    spacing={1}
-                    alignItems='center'
-                    justifyContent='space-between'
-                  >
-                    <img src={playerHistory.avatar} style={{ width: '60px' }} />
-                    <Typography
-                      fontSize={20}
-                    >
-                      #{index + 1} {playerHistory.name} - {playerHistory.current.toFixed(3)}
-                    </Typography>
-                    <Paper elevation={0} variant='outlined'>
-                      <Box height={70} width={200} padding={1}>
-                        <LineChart options={options} data={data} />
-                      </Box>
-                    </Paper>
-                  </Stack>
-                })}
               </Stack>
             </Box>
           </Paper>
@@ -186,6 +112,79 @@ export default function HomePage() {
           </Paper>
         </Grid>
 
+        <Grid item md={6}>
+          <Grid container spacing={2}>
+            <Grid item md={6}>
+              <Paper>
+                <Box padding={2} minHeight={122}>
+                  <Stack spacing={2}>
+                    <Stack direction='row' spacing={1}>
+                      <StraightenIcon />
+                      <Typography variant='overline' sx={{ fontSize: '9px' }}>
+                        Longest win streak
+                      </Typography>
+                    </Stack>
+                    {stats?.longestStreak?.user ?
+                      (
+                        <Stack direction='row' alignItems='center' spacing={1}>
+                          <img src={stats.longestStreak.user.avatar} style={{ width: '60px' }} />
+                          <Typography variant="overline">{stats.longestStreak.user.name} - {stats.longestStreak.streak}</Typography>
+                        </Stack>
+                      ) : null
+                    }
+                  </Stack>
+                </Box>
+              </Paper>
+            </Grid>
+
+            <Grid item md={6}>
+              <Paper>
+                <Box padding={2} minHeight={122}>
+                  <Stack spacing={2}>
+                    <Stack direction='row' spacing={1}>
+                      <AccessTimeIcon />
+                      <Typography variant='overline' sx={{ fontSize: '9px' }}>
+                        Most recent game
+                      </Typography>
+                    </Stack>
+                    {stats?.mostRecentGame ?
+                      (
+                        <Stack>
+                          <Stack direction='row' alignItems='center' spacing={1}>
+                            <img src={stats.mostRecentGame.player1.avatar} style={{ width: '30px' }} />
+                            <Typography variant="overline">{stats.mostRecentGame.player1.name} - {stats.mostRecentGame.player1Points}</Typography>
+                          </Stack>
+                          <Stack direction='row' alignItems='center' spacing={1}>
+                            <img src={stats.mostRecentGame.player2.avatar} style={{ width: '30px' }} />
+                            <Typography variant="overline">{stats.mostRecentGame.player2.name} - {stats.mostRecentGame.player2Points}</Typography>
+                          </Stack>
+                        </Stack>
+                      ) : <Typography>No games have been played</Typography>
+                    }
+                  </Stack>
+                </Box>
+              </Paper>
+            </Grid>
+
+            {true || stats?.latestTournamentWinner ?
+              <Grid item md={6}>
+                <Paper>
+                  <Box padding={2} minHeight={122}>
+                    <Stack spacing={2}>
+                      <Stack direction='row' spacing={1}>
+                        <AccessTimeIcon />
+                        <Typography variant='overline' sx={{ fontSize: '9px' }}>
+                          Won
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </Box>
+                </Paper>
+              </Grid>
+              : null
+            }
+          </Grid>
+        </Grid>
 
       </Grid>
     </Box>

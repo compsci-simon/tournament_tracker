@@ -1,7 +1,7 @@
 import { Rating } from "@prisma/client"
 
 export const findStreakFromRatings = (ratings: Rating[]) => {
-
+  ratings = ratings.sort((a, b) => a.time.getTime() - b.time.getTime())
   let streak = 0
   for (let i = 1; i < ratings.length; i++) {
     let miniStreak = 0
