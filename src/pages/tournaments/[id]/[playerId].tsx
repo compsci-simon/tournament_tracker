@@ -40,19 +40,20 @@ export default function PlayerGroupGames() {
 
   const playerGames = tournament.games.filter(game => [game.player1Id, game.player2Id].includes(playerId))
 
-  function onSuccess(data: Game, variables, context) {
+  function onSuccess(data: { nextRound: undefined, updatedGame: Game }, variables, context) {
     utils.tournament.getTournament.setData({
       id: tournamentId
     }, (oldData) => {
+      const updatedGame = data.updatedGame
       return {
         ...oldData,
         games: oldData.games.map(game => {
-          if (game.id == data.id) {
+          if (game.id == updatedGame.id) {
             return {
               ...game,
-              player1Points: data.player1Points,
-              player2Points: data.player2Points,
-              time: data.time
+              player1Points: updatedGame.player1Points,
+              player2Points: updatedGame.player2Points,
+              time: updatedGame.time
             }
           }
           return game
@@ -98,34 +99,36 @@ export default function PlayerGroupGames() {
               </ListItem>
               <Divider />
               {playerGames.map(game => {
-                return <Box key={game.id}>
-                  <ListItem>
-                    <Grid container>
-                      <Grid item xs={3}>
-                        <ListItemText>{game.player1?.name}</ListItemText>
+                return (
+                  <Box key={game.id}>
+                    <ListItem>
+                      <Grid container>
+                        <Grid item xs={3}>
+                          <ListItemText>{game.player1?.name}</ListItemText>
+                        </Grid>
+                        <Grid item xs={3}>
+                          <ListItemText>{game.player2?.name}</ListItemText>
+                        </Grid>
+                        <Grid item xs={3}>
+                          {game.player1Points}-{game.player2Points}
+                        </Grid>
+                        <Grid item xs={3}>
+                          <Button
+                            onClick={() => {
+                              setSelectedGame(game)
+                              setPlayer1Points(game.player1Points)
+                              setPlayer2Points(game.player2Points)
+                              setOpen(true)
+                            }}
+                          >
+                            Set score
+                          </Button>
+                        </Grid>
                       </Grid>
-                      <Grid item xs={3}>
-                        <ListItemText>{game.player2?.name}</ListItemText>
-                      </Grid>
-                      <Grid item xs={3}>
-                        {game.player1Points}-{game.player2Points}
-                      </Grid>
-                      <Grid item xs={3}>
-                        <Button
-                          onClick={() => {
-                            setSelectedGame(game)
-                            setPlayer1Points(game.player1Points)
-                            setPlayer2Points(game.player2Points)
-                            setOpen(true)
-                          }}
-                        >
-                          Set score
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </ListItem>
-                  <Divider />
-                </Box>
+                    </ListItem>
+                    <Divider />
+                  </Box>
+                )
               })}
             </List>
           </Box>
@@ -136,7 +139,9 @@ export default function PlayerGroupGames() {
 }
 
 PlayerGroupGames.getLayout = function getLayout(page: React.ReactElement) {
-  return <Layout>
-    {page}
-  </Layout>
+  return (
+    <Layout>
+      {page}
+    </Layout>
+  )
 }
