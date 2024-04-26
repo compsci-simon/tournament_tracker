@@ -34,11 +34,11 @@ export default function PlayerGroupGames() {
     id: tournamentId
   })
 
-  const playerGames = tournament.games.filter(game => [game.player1Id, game.player2Id].includes(playerId))
-
   if (isLoading) {
     return <div>Loading..</div>
   }
+
+  const playerGames = tournament.games.filter(game => [game.player1Id, game.player2Id].includes(playerId))
 
   function onSuccess(data: Game, variables, context) {
     utils.tournament.getTournament.setData({
