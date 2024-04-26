@@ -2,7 +2,19 @@
 
 ## Project overview
 
-League provides a tournament website that allows you to organise your office, school or local tournament. There is an admin user that can create tournaments which start on a particular date. Users of the system can then join tournaments before the starting date, and once the starting date has passed the games will be scheduled using a round-robbin algorithm (everyone playes everyone else).
+### Features
+
+---
+
+On the home page you will see overview statistics for the site. This will show things such as the number of registered users, how many games have been played etc.
+
+![](./images/home%20page.png)
+
+League provides a tournament website that allows you to organise your office, school or local tournament. There is an admin user that can create tournaments which start on a particular date. Users of the system can then join tournaments before the starting date, and once the starting date has passed the games will be scheduled. There are two types of tournaments.
+
+The first type is a multi-stage tournaments, where there are group stages and select players progress to the knockout rounds, where players win and continue to the next round or lose and get knocked out of the tournament. This progresses until there is a winner.
+
+The second type is round-robbin where everyone plays everyone else. There is no hierarchy to this tournament.
 
 League also provide rating calculations, and updates player's ratings after each game.
 
