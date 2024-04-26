@@ -255,9 +255,9 @@ export const scheduleMultiStageGames = (players: string[]) => {
   const groupSize = getGroupSize(totalPlayers)
   const baseGroup = 'A'
 
-  for (let group = 0; (group + 1) * groupSize < totalPlayers; group++) {
+  for (let group = 0; (group + 1) * groupSize <= totalPlayers; group++) {
     let roundPlayers = players.slice(groupSize * group, groupSize * (group + 1))
-    if ((group + 2) * groupSize >= totalPlayers) {
+    if ((group + 2) * groupSize > totalPlayers) {
       roundPlayers = players.slice(groupSize * group)
     }
     const { schedule } = roundRobinScheduleGames(roundPlayers)
