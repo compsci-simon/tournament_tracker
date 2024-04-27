@@ -342,8 +342,31 @@ export const tournamentRouter = createTRPCRouter({
           player2: true,
         }
       })
+      if (!game) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Game not found'
+        })
+      }
       if (game && game.tournamentId) {
         await ensureTournamentIsNotLocked(ctx.prisma, game.tournamentId)
+      }
+      if (!ctx.session.user.email) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Session required.'
+        })
+      }
+      const sessionUser = await ctx.prisma.user.findFirst({
+        where: {
+          email: ctx.session.user.email
+        }
+      })
+      if (!sessionUser || (![game.player1Id, game.player2Id].includes(sessionUser.id) && sessionUser.role != 'admin')) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You have to be an involved in the game, or be an admin, to change the score'
+        })
       }
       const player1 = game?.player1
       const player2 = game?.player2
@@ -428,6 +451,11 @@ export const tournamentRouter = createTRPCRouter({
           player1Points: input.player1Points,
           player2Points: input.player2Points,
           time: new Date(),
+          lastModifiedUser: {
+            connect: {
+              id: sessionUser.id
+            }
+          }
         },
         select: {
           player1: true,

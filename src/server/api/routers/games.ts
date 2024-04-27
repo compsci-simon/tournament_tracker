@@ -3,6 +3,7 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/
 import { calculateNewRatings } from "~/utils/tournament";
 import { createGameNotification } from "./routerUtils";
 import { ensureTournamentIsNotLocked } from "./tournaments";
+import { TRPCError } from "@trpc/server";
 
 export const gamesRouter = createTRPCRouter({
   getAll: publicProcedure
@@ -52,6 +53,19 @@ export const gamesRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       const { player1Email, player2Email, player1Score, player2Score } = input
+      if (!ctx.session?.user.email) return
+      const sessionUser = await ctx.prisma.user.findFirst({
+        where: {
+          email: ctx.session?.user.email
+        }
+      })
+      // We do not want to allow a non-admin user to create games in which they were not involved
+      if (!sessionUser || (![player1Email, player2Email].includes(sessionUser.email) && sessionUser.role != 'admin')) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Non-admin users must be involved in a newly created game.'
+        })
+      }
       if (!(player1Email && player2Email)) {
         return
       }
@@ -68,8 +82,9 @@ export const gamesRouter = createTRPCRouter({
           email: player2Email
         }
       })
-      const player1Id: string = player1.id
-      const player2Id: string = player2.id
+      if (!player1 || !player2) return
+      const player1Id = player1.id
+      const player2Id = player2.id
       const player1Rating = await ctx.prisma.rating.findFirst({
         where: {
           userId: player1Id
@@ -120,6 +135,11 @@ export const gamesRouter = createTRPCRouter({
               { rating: player1NewRating, userId: player1Id, ratingChange: player1RatingChange },
               { rating: player2NewRating, userId: player2Id, ratingChange: player2RatingChange },
             ]
+          },
+          lastModifiedUser: {
+            connect: {
+              id: sessionUser.id
+            }
           }
         },
         include: {
@@ -146,11 +166,22 @@ export const gamesRouter = createTRPCRouter({
   deleteGame: protectedProcedure
     .input(z.object({ gameId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const sessionUser = await ctx.prisma.user.findFirst({
+        where: {
+          email: ctx.session.user.email ?? ''
+        }
+      })
       const game = await ctx.prisma.game.findFirst({
         where: {
           id: input.gameId
         }
       })
+      if (!sessionUser || (![game?.player1Id, game?.player2Id].includes(sessionUser.id) && sessionUser.role != 'admin')) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only users involved, or admin, may delete a game.'
+        })
+      }
       if (game && game.tournamentId) {
         await ensureTournamentIsNotLocked(ctx.prisma, game.tournamentId)
       }
