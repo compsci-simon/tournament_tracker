@@ -2,10 +2,9 @@ import { Game, PrismaClient, Rating } from "@prisma/client"
 import { TRPCError } from "@trpc/server"
 import assert from "assert"
 import { z } from "zod"
-import { calculateNewRatings, getAllTimeTopPlayers, getLeadersFromList, mostGamesUser, playerRatingHistories, weeksBiggestGainer } from "~/utils/tournament"
+import { calculateNewRatings, getAllTimeTopPlayers, getLeadersFromList, mostGamesUser, weeksBiggestGainer } from "~/utils/tournament"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
 import { createGameNotification } from "./routerUtils"
-import { TextRotationAngledown } from "@mui/icons-material"
 import { findStreakFromRatings } from "~/utils/utils"
 
 const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
@@ -90,6 +89,8 @@ const startKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) =
 }
 
 const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
+  // If this game has no next round, return
+  if (!game.nextRoundId) return
   const nextRoundGame = await prisma.game.findFirst({
     where: {
       id: game.nextRoundId
@@ -97,12 +98,16 @@ const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
   })
   if (!nextRoundGame) {
     // This is the last game of the tournament
-    return null
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Next round not found'
+    })
   }
   if (game.player1Points == game.player2Points) return null;
   const winnerId = game.player1Points > game.player2Points ? game.player1Id : game.player2Id
   assert(winnerId)
   if (!nextRoundGame.player1Id || [game.player1Id, game.player2Id].includes(nextRoundGame.player1Id)) {
+    // If player1Id is not set on the next round or the player from the current round that continues has changed, set player1Id to the new player
     return await prisma.game.update({
       where: {
         id: nextRoundGame.id
@@ -169,6 +174,25 @@ const getLongestWinStreak = async (prisma: PrismaClient) => {
   return {
     user,
     streak: winner.winStreak
+  }
+}
+
+export const ensureTournamentIsNotLocked = async (prisma: PrismaClient, tournamentId: string) => {
+  const tournamentIsLocked = await prisma.tournament.findFirst({
+    where: {
+      id: tournamentId
+    },
+    select: {
+      isLocked: true
+    }
+  })
+  console.log('tournamentIsLocked!.isLocked', tournamentIsLocked!.isLocked)
+  if (tournamentIsLocked!.isLocked) {
+    console.log('Tournament is locked, and cannot be modified.')
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Tournament is locked, and cannot be modified."
+    })
   }
 }
 
@@ -246,6 +270,7 @@ export const tournamentRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       const userEmail = ctx.session.user.email
+      await ensureTournamentIsNotLocked(ctx.prisma, input.tournamentId)
       const player = await ctx.prisma.user.findFirst({
         where: {
           email: userEmail ?? ''
@@ -275,6 +300,7 @@ export const tournamentRouter = createTRPCRouter({
     .input(z.object({ tournamentId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const userEmail = ctx.session.user.email
+      await ensureTournamentIsNotLocked(ctx.prisma, input.tournamentId)
       const player = await ctx.prisma.user.findFirst({
         where: {
           email: userEmail ?? ''
@@ -316,6 +342,9 @@ export const tournamentRouter = createTRPCRouter({
           player2: true,
         }
       })
+      if (game && game.tournamentId) {
+        await ensureTournamentIsNotLocked(ctx.prisma, game.tournamentId)
+      }
       const player1 = game?.player1
       const player2 = game?.player2
       if (!(player1 && player2)) {
@@ -559,4 +588,23 @@ export const tournamentRouter = createTRPCRouter({
       })
       return getLeadersFromList(Object.values(playerScoresMap))
     }),
+  switchLock: protectedProcedure
+    .input(z.object({ tournamentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const tournamentLocked = await ctx.prisma.tournament.findFirst({
+        where: { id: input.tournamentId }
+      })
+      return await ctx.prisma.tournament.update({
+        where: {
+          id: input.tournamentId
+        },
+        data: {
+          isLocked: !tournamentLocked.isLocked
+        },
+        select: {
+          id: true,
+          isLocked: true
+        }
+      })
+    })
 })

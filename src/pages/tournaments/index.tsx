@@ -1,6 +1,5 @@
-import { Box, Button, Paper, Stack, Typography } from '@mui/material'
+import { Box, Button, IconButton, Paper, Stack, Typography } from '@mui/material'
 import Layout from '../../components/Layout'
-import LineChart from '../../components/LineChart'
 import { api } from '~/utils/api'
 import { useRouter } from 'next/router'
 import { enqueueSnackbar } from 'notistack'
@@ -9,7 +8,8 @@ import { useContext } from 'react'
 import { ThemeContext } from '../_app'
 import { graphSx } from '~/utils/constants'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
-
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 
 const columns: GridColDef[] = [
   {
@@ -50,10 +50,26 @@ export default function TournamentsPage() {
       enqueueSnackbar('Failed to leave tournament', { variant: 'error' })
     }
   })
+  const { mutate: toggleLock } = api.tournament.switchLock.useMutation({
+    onSuccess(data: { id: string, isLocked: boolean }) {
+      utils.tournament.tournamentsStats.setData(undefined, (oldData) => {
+        return (oldData ?? []).map(tournament => {
+          if (tournament.id == data.id) {
+            return {
+              ...tournament,
+              isLocked: data.isLocked
+            }
+          }
+          return tournament
+        })
+      })
+    },
+  })
   const { data: session } = useSession()
   const router = useRouter()
   const currentDate = new Date()
   const { dark } = useContext(ThemeContext)
+  const isAdmin = session!.user.role == 'admin'
 
   return (
     <Box padding={4}>
@@ -61,12 +77,8 @@ export default function TournamentsPage() {
         {tournaments?.length == 0 && <Typography variant='h4'>No tournaments yet</Typography>}
         {tournaments?.map(tournament => {
           const started = tournament.startDate <= currentDate
-          const joinTournament = () => {
-            joinTournamentMutation({ tournamentId: tournament.id })
-          }
-          const leaveTournament = () => {
-            leaveTournamentMutation({ tournamentId: tournament.id })
-          }
+          const joinTournament = () => joinTournamentMutation({ tournamentId: tournament.id })
+          const leaveTournament = () => leaveTournamentMutation({ tournamentId: tournament.id })
 
           const ButtonToShow = () => {
             const signedUpToTournament = tournament.players.map(p => p.email).includes(session?.user.email ?? '')
@@ -99,69 +111,78 @@ export default function TournamentsPage() {
 
           const startingSoonInfo = () => {
             if (started) return null
-            return <>
-              <Typography variant='h5'>
-                Starting: {tournament.startDate.toDateString()} ({tournament.startDate.toLocaleTimeString(undefined, {
-                  hour: 'numeric',
-                  minute: 'numeric',
-                })})
-              </Typography>
-              <Box display='inline-block' padding={2}>
-                <Paper elevation={0} sx={{ display: 'inline-block' }}>
-                  <Box padding={2}>
-                    <table>
-                      <tr>
-                        <th colSpan={2}>Signed up players</th>
-                      </tr>
-                      {tournament.players.map(player => {
-                        if (player.email == session.user.email) {
-                          return <tr key={player.email}><td><em>You</em></td></tr>
-                        }
-                        return <tr key={player.email}><td>{player.name}</td></tr>
-                      })}
-                    </table>
-                  </Box>
-                </Paper>
-              </Box>
-            </>
+            return (
+              <>
+                <Typography variant='h5'>
+                  Starting: {tournament.startDate.toDateString()} ({tournament.startDate.toLocaleTimeString(undefined, {
+                    hour: 'numeric',
+                    minute: 'numeric',
+                  })})
+                </Typography>
+                <Box display='inline-block' padding={2}>
+                  <Paper elevation={0} sx={{ display: 'inline-block' }}>
+                    <Box padding={2}>
+                      <table>
+                        <tr>
+                          <th colSpan={2}>Signed up players</th>
+                        </tr>
+                        {tournament.players.map(player => {
+                          if (player.email == session.user.email) {
+                            return <tr key={player.email}><td><em>You</em></td></tr>
+                          }
+                          return <tr key={player.email}><td>{player.name}</td></tr>
+                        })}
+                      </table>
+                    </Box>
+                  </Paper>
+                </Box>
+              </>
+            )
           }
 
-          return <Paper key={tournament.id}>
-            <Box padding={2}>
-              <Stack spacing={1}>
-                <Typography variant='h3'>
-                  {tournament.name}
-                </Typography>
-                {
-                  startingSoonInfo()
-                }
-                {
-                  started ?
-                    <>
-                      <Box height={300}>
-                        <DataGrid
-                          columns={columns}
-                          rows={tournament.players}
-                          disableRowSelectionOnClick
-                          pageSizeOptions={[5]}
-                          sx={graphSx(dark)}
-                          getRowId={(row) => row.email}
-                        />
-                      </Box>
-                      <Box>
-                        <Button
-                          variant='outlined'
-                          onClick={() => { void router.push(`/tournaments/${tournament.id}`).then((r) => { r }).catch(e => console.log(e)) }}
-                        >
-                          View
-                        </Button>
-                      </Box>
-                    </>
-                    : ButtonToShow()
-                }
-              </Stack>
-            </Box>
-          </Paper>
+          return (
+            <Paper key={tournament.id}>
+              <Box padding={2}>
+                <Stack spacing={1}>
+                  <Stack direction='row' justifyContent='space-between'>
+                    <Typography variant='h3'>
+                      {tournament.name}
+                    </Typography>
+                    {tournament.isLocked && isAdmin && (
+                      <div><IconButton onClick={() => void toggleLock({ tournamentId: tournament.id })}><LockIcon /></IconButton></div>
+                    ) || isAdmin && (
+                      <div><IconButton onClick={() => void toggleLock({ tournamentId: tournament.id })}><LockOpenIcon /></IconButton></div>
+                    )}
+                  </Stack>
+                  {startingSoonInfo()}
+                  {
+                    started ? (
+                      <>
+                        <Box height={300}>
+                          <DataGrid
+                            columns={columns}
+                            rows={tournament.players}
+                            disableRowSelectionOnClick
+                            pageSizeOptions={[5]}
+                            sx={graphSx(dark)}
+                            getRowId={(row) => row.email}
+                          />
+                        </Box>
+                        <Box>
+                          <Button
+                            variant='outlined'
+                            onClick={() => { void router.push(`/tournaments/${tournament.id}`).then((r) => { r }).catch(e => console.log(e)) }}
+                          >
+                            View
+                          </Button>
+                        </Box>
+                      </>
+                    ) : ButtonToShow()
+                  }
+                </Stack>
+              </Box>
+            </Paper>
+          )
         })}
       </Stack>
     </Box>

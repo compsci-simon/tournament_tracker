@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useState } from "react";
-import { Game } from "@prisma/client";
 import {
   Box,
   Button,
@@ -34,17 +33,18 @@ export default function PlayerGroupGames() {
     id: tournamentId
   })
 
-  if (isLoading) {
+  if (isLoading || !tournament) {
     return <div>Loading..</div>
   }
 
-  const playerGames = tournament.games.filter(game => [game.player1Id, game.player2Id].includes(playerId))
+  const playerGames = tournament.games.filter(game => [game.player1Id, game.player2Id].includes(playerId) && game.type == 'group')
 
-  function onSuccess(data: SetGameType, variables, context) {
+  function onSuccess(data: SetGameType) {
     utils.tournament.getTournament.setData({
       id: tournamentId
     }, (oldData) => {
-      const updatedGame = data.updatedGame
+      if (!oldData) return oldData
+      const updatedGame = data.updatedGame!
       return {
         ...oldData,
         games: oldData.games.map(game => {

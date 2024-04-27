@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { calculateNewRatings } from "~/utils/tournament";
 import { createGameNotification } from "./routerUtils";
+import { ensureTournamentIsNotLocked } from "./tournaments";
 
 export const gamesRouter = createTRPCRouter({
   getAll: publicProcedure
@@ -145,6 +146,14 @@ export const gamesRouter = createTRPCRouter({
   deleteGame: protectedProcedure
     .input(z.object({ gameId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const game = await ctx.prisma.game.findFirst({
+        where: {
+          id: input.gameId
+        }
+      })
+      if (game && game.tournamentId) {
+        await ensureTournamentIsNotLocked(ctx.prisma, game.tournamentId)
+      }
       return await ctx.prisma.game.delete({
         where: {
           id: input.gameId

@@ -23,25 +23,35 @@ function KnockoutNode({ data: game }: { data: GameWithPlayers }) {
     scoreLabel = `${game.player1Points} - ${game.player2Points}`
   }
   const onSuccess = (data: SetGameType) => {
-    // utils.tournament.getTournament.setData({
-    //   id: tournamentId
-    // }, (oldData) => {
-    //   const updatedGame = data.updatedGame
-    //   const nextRound = data.nextRound
-    //   const newData = {
-    //     ...oldData,
-    //     games: oldData.games.map(game => {
-    //       if (game.id == updatedGame?.id) {
-    //         return { ...updatedGame }
-    //       } else if (game.id == nextRound.id) {
-    //         return { ...nextRound }
-    //       }
-    //       return game
-    //     })
-    //   }
-    //   return newData
-    // })
-    utils.tournament.getTournament.invalidate() // TODO: Set data properly instead of invalidating all adata
+    utils.tournament.getTournament.setData({
+      id: tournamentId
+    }, (oldData) => {
+      if (!oldData) return undefined
+      const updatedGame = data.updatedGame
+      const nextRound = data.nextRound
+      const newData = {
+        ...oldData,
+        games: oldData.games.map(game => {
+          if (game.id == updatedGame?.id) {
+            return {
+              ...game,
+              player1Points: updatedGame.player1Points,
+              player2Points: updatedGame.player2Points
+            }
+          } else if (game.id == nextRound?.id) {
+            return {
+              ...game,
+              player1Id: nextRound.player1Id,
+              player1: nextRound.player1,
+              player2Id: nextRound.player2Id,
+              player2: nextRound.player2,
+            }
+          }
+          return game
+        })
+      }
+      return newData
+    })
   }
 
   return (
