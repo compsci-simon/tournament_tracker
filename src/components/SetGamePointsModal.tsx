@@ -37,39 +37,41 @@ const SetGamePointsModal = ({
   const resetScores = () => {
     setPlayer1Points(0)
     setPlayer2Points(0)
-    updatePointsMutation({ gameId: game.id ?? '', player1Points: 0, player2Points: 0 })
+    updatePointsMutation({ gameId: game.id, player1Points: 0, player2Points: 0 })
   }
+  if (!game) return null
 
   if (isLoading) {
     return <CircularProgress />
   }
 
   return (
-    <Modal
-      open={open}
-      onClose={() => setOpen(false)}
-    >
+    <Modal open={open} onClose={() => setOpen(false)}>
       <Box sx={modalStyle}>
         <Stack spacing={2}>
-          <Typography>{game?.player1?.name}</Typography>
+          <Typography>{game.player1?.name}</Typography>
           <TextField
             label='Points'
             type='number'
             value={player1Points}
             onChange={e => {
-              if (parseInt(e.target.value) >= 0) {
+              if (parseInt(e.target.value) > 0) {
                 setPlayer1Points(parseInt(e.target.value))
+              } else {
+                setPlayer1Points(0)
               }
             }}
           />
-          <Typography>{game?.player2?.name ?? ''}</Typography>
+          <Typography>{game.player2?.name ?? ''}</Typography>
           <TextField
             label='Points'
             type='number'
             value={player2Points}
             onChange={e => {
-              if (parseInt(e.target.value) >= 0) {
+              if (parseInt(e.target.value) > 0) {
                 setPlayer2Points(parseInt(e.target.value))
+              } else {
+                setPlayer2Points(0)
               }
             }}
           />
@@ -77,7 +79,7 @@ const SetGamePointsModal = ({
             <Button
               variant="outlined"
               onClick={() => {
-                updatePointsMutation({ gameId: game?.id ?? '', player1Points, player2Points })
+                updatePointsMutation({ gameId: game.id, player1Points, player2Points })
                 setOpen(false)
               }}
             >

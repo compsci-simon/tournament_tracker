@@ -16,7 +16,7 @@ const NodeTypes = { groupStageNode: GroupStageNode, knockoutNode: KnockoutNode }
 const KnockoutTree = ({ games }: { games: Game[] }) => {
   const level0Games = games.filter(g => g.level == 0).length
   const BOTTOMRIGHT = {
-    x: level0Games * 130,
+    x: (level0Games - 1) * 250, // Change this to horizontally spread the items
     y: level0Games * 150
   }
   const { nodes, edges } = calculatedNodePositions(TOPLEFT, BOTTOMRIGHT, games)
@@ -31,9 +31,7 @@ const KnockoutTree = ({ games }: { games: Game[] }) => {
           edges={edges}
           fitView
           zoomOnDoubleClick={false}
-          proOptions={{
-            hideAttribution: true
-          }}
+          proOptions={{ hideAttribution: true }}
         />
       </Box>
     </Box>

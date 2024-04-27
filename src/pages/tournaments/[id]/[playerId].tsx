@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 
 import Layout from "~/components/Layout";
-import { api } from "~/utils/api";
+import { api, SetGameType } from "~/utils/api";
 import SetGamePointsModal from "~/components/SetGamePointsModal";
 import { GameWithPlayers } from "~/types";
 
@@ -40,7 +40,7 @@ export default function PlayerGroupGames() {
 
   const playerGames = tournament.games.filter(game => [game.player1Id, game.player2Id].includes(playerId))
 
-  function onSuccess(data: { nextRound: undefined, updatedGame: Game }, variables, context) {
+  function onSuccess(data: SetGameType, variables, context) {
     utils.tournament.getTournament.setData({
       id: tournamentId
     }, (oldData) => {
