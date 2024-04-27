@@ -128,6 +128,7 @@ model Tournament {
     emailReminders Boolean
     numRounds      Int
     name           String
+    locked         Boolean        @default(false)
     players        User[]
     games          Game[]
     TournamentJob  TournamentJob?
