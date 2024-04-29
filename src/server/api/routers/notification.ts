@@ -1,6 +1,45 @@
 import { z } from 'zod'
 import { createTRPCRouter, protectedProcedure } from '../trpc'
 import { getUser } from './routerUtils'
+import { TRPCError } from '@trpc/server'
+import assert from 'assert'
+import { GameNotification, PrismaClient, User } from '@prisma/client'
+
+const markNotificationAsSeen = async (prisma: PrismaClient, user: User, notificationId: string) => {
+  const gameNotification = await prisma.gameNotification.findFirst({
+    where: {
+      id: notificationId
+    },
+    include: {
+      game: {
+        include: {
+          player1: true,
+          player2: true
+        }
+      }
+    }
+  })
+  assert(gameNotification?.game.player1)
+  if (user.id == gameNotification.game.player1.id) {
+    return await prisma.gameNotification.update({
+      where: {
+        id: notificationId
+      },
+      data: {
+        seenByPlayer1: true
+      }
+    })
+  } else {
+    return await prisma.gameNotification.update({
+      where: {
+        id: notificationId
+      },
+      data: {
+        seenByPlayer2: true
+      }
+    })
+  }
+}
 
 export const notificationsRouter = createTRPCRouter({
   getPlayerNotifications: protectedProcedure
@@ -11,7 +50,12 @@ export const notificationsRouter = createTRPCRouter({
           email: input.playerEmail
         }
       })
-      if (!user) return []
+      if (!user) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Player not found'
+        })
+      }
       const notifications = await ctx.prisma.gameNotification.findMany({
         where: {
           game: {
@@ -36,47 +80,20 @@ export const notificationsRouter = createTRPCRouter({
       return notifications
     }),
   playerSawNotification: protectedProcedure
-    .input(z.object({ gameId: z.string() }))
+    .input(z.object({ notificationId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const user = await getUser(ctx)
-      const game = await ctx.prisma.game.findFirst({
-        where: { id: input.gameId },
-        include: {
-          notifications: true
-        }
-      })
-      const notificationId = game.notifications.at(0).id
-      const gameNotification = await ctx.prisma.gameNotification.findFirst({
-        where: {
-          id: notificationId
-        },
-        include: {
-          game: {
-            include: {
-              player1: true,
-              player2: true
-            }
-          }
-        }
-      })
-      if (user.id == gameNotification.game.player1.id) {
-        return await ctx.prisma.gameNotification.update({
-          where: {
-            id: notificationId
-          },
-          data: {
-            seenByPlayer1: true
-          }
-        })
-      } else {
-        return await ctx.prisma.gameNotification.update({
-          where: {
-            id: notificationId
-          },
-          data: {
-            seenByPlayer2: true
-          }
-        })
+      return await markNotificationAsSeen(ctx.prisma, user, input.notificationId)
+    }),
+  markSelectNotificationsAsRead: protectedProcedure
+    .input(z.object({ notificationIds: z.array(z.string()) }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await getUser(ctx)
+      const notifications: { [id: string]: GameNotification } = {}
+      for (let i = 0; i < input.notificationIds.length; i++) {
+        const notification = await markNotificationAsSeen(ctx.prisma, user, input.notificationIds[i])
+        notifications[notification.id] = notification
       }
+      return notifications
     })
 })

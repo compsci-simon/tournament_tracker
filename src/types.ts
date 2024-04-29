@@ -9,6 +9,16 @@ export type coordinate = {
   y: number
 }
 
+const notifications = Prisma.validator<Prisma.GameNotificationFindManyArgs>()({
+  include: {
+    game: {
+      include: {
+        player1: true,
+        player2: true
+      }
+    }
+  },
+})
 const ratingWithPlayer = Prisma.validator<Prisma.RatingFindManyArgs>()({
   include: { player: true }
 })
@@ -80,3 +90,4 @@ export type TournamentWithGames = Prisma.TournamentGetPayload<typeof tournamentW
 export type TournamentWithPlayersAndGames = Prisma.TournamentGetPayload<typeof tournamentWithPlayersAndGames>
 export type TournamentWithGamesWithPlayers = Prisma.TournamentGetPayload<typeof tournamentWithGamesWithPlayers>
 export type TournamentWithPlayersAndGamesWithPlayers = Prisma.TournamentGetPayload<typeof tournamentWithPlayersAndGamesWithPlayers>
+export type GameNotification = Prisma.GameNotificationGetPayload<typeof notifications>
