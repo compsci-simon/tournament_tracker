@@ -113,6 +113,7 @@ model Game {
     level              Int?
     // The `group` field indicates the pool to which this game belongs
     poolId             String?
+    lastModifiedTime   DateTime           @default(now())
     lastModifiedUserId String?
     lastModifiedUser   User?              @relation(fields: [userId], references: [id])
     ratings            Rating[]
