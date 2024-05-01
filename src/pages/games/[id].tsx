@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react'
 import Layout from '~/components/Layout'
 import SetGamePointsModal from '~/components/SetGamePointsModal'
 import { api } from '~/utils/api'
+import { capitalizeFirstLetter } from '~/utils/utils'
 
 export default function Page() {
   const router = useRouter()
@@ -32,7 +33,7 @@ export default function Page() {
       enqueueSnackbar('Successfully deleted game', { variant: 'success' })
     }
   })
-  const { mutate: setSeenByPlayer } = api.notifications.playerSawNotification.useMutation()
+  const { mutate: setSeenByPlayer } = api.notifications.setGameSeen.useMutation()
   const context = api.useContext()
 
   const onSuccess = () => {
@@ -55,14 +56,18 @@ export default function Page() {
   }, [game])
 
   useEffect(() => {
-    setSeenByPlayer({ gameId })
+    if (game) {
+      setSeenByPlayer({ gameId: game!.id })
+    }
   }, [])
+
+  if (isLoading || !game) return null
 
   // We need a session to continue
   if (!session || !session.user || !session.user.email) return
-  canEditGame = session!.user && ([game?.player1?.email, game?.player2?.email].includes(session.user.email) || session?.user.role == 'admin')
+  canEditGame = session!.user && ([game.player1?.email, game.player2?.email].includes(session.user.email) || session?.user.role == 'admin')
+  const cantEditMessage = 'You must be admin or involded in this game'
 
-  if (isLoading || !game) return null
 
   return (
     <>
@@ -80,7 +85,9 @@ export default function Page() {
         <Paper elevation={2}>
           <Box p={2}>
             <Stack spacing={2}>
-              <Typography variant='h5'>Date: {game?.time.toDateString()}</Typography>
+              <Typography variant='h5'>{capitalizeFirstLetter(game?.type)} game</Typography>
+              <Typography variant='caption' sx={{ opacity: '0.6' }}>{game?.time.toDateString()}</Typography>
+
               <Stack alignItems='center' direction='row' spacing={2}>
                 <img src={game.player1!.avatar} style={{ width: '40px' }} />
                 <Typography>{game?.player1?.name}: {player1Points}</Typography>
@@ -89,8 +96,9 @@ export default function Page() {
                 <img src={game.player2!.avatar} style={{ width: '40px' }} />
                 <Typography>{game?.player2?.name}: {player2Points}</Typography>
               </Stack>
+
               <Stack direction='row' spacing={2} justifyContent='center'>
-                <Tooltip title={!canEditGame && 'You must be admin or involded in this game'} placement='top' arrow>
+                <Tooltip title={!canEditGame && cantEditMessage} placement='top' arrow>
                   <span>
                     <Button
                       variant='outlined'
@@ -102,20 +110,21 @@ export default function Page() {
                     </Button>
                   </span>
                 </Tooltip>
-                <Tooltip title={!canEditGame && 'You must be admin or involded in this game'} placement='top' arrow>
+                <Tooltip title={(!canEditGame && cantEditMessage) || (game.type != 'quick' && 'You may only delete quick games')} placement='top' arrow>
                   <span>
                     <Button
                       color='error'
                       variant='outlined'
                       fullWidth
                       onClick={() => deleteGame({ gameId: game.id })}
-                      disabled={!canEditGame}
+                      disabled={!canEditGame || game.type != 'quick'}
                     >
                       Delete
                     </Button>
                   </span>
                 </Tooltip>
               </Stack>
+
             </Stack>
           </Box>
         </Paper>
