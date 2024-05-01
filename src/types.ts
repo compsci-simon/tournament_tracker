@@ -28,6 +28,13 @@ const gameWithPlayers = Prisma.validator<Prisma.GameFindFirstArgs>()({
     player2: true
   }
 })
+const gameWithPlayerAndNotifications = Prisma.validator<Prisma.GameFindFirstArgs>()({
+  include: {
+    player1: true,
+    player2: true,
+    notifications: true
+  }
+})
 const minimalGame = Prisma.validator<Prisma.GameFindFirstArgs>()({
   select: {
     poolId: true,
@@ -85,6 +92,7 @@ const tournamentWithPlayersAndGamesWithPlayers = Prisma.validator<Prisma.Tournam
 export type RatingWithPlayer = Prisma.RatingGetPayload<typeof ratingWithPlayer>
 export type MinimalGame = Prisma.GameGetPayload<typeof minimalGame>
 export type GameWithPlayers = Prisma.GameGetPayload<typeof gameWithPlayers>
+export type GameWithPlayersAndNotification = Prisma.GameGetPayload<typeof gameWithPlayerAndNotifications>
 export type GameWithPlayersMin = Prisma.GameGetPayload<typeof gameWithPlayerMin>
 export type TournamentWithGames = Prisma.TournamentGetPayload<typeof tournamentWithGames>
 export type TournamentWithPlayersAndGames = Prisma.TournamentGetPayload<typeof tournamentWithPlayersAndGames>

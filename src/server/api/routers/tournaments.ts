@@ -4,7 +4,7 @@ import assert from "assert"
 import { z } from "zod"
 import { calculateNewRatings, getAllTimeTopPlayers, getLeadersFromList, mostGamesUser, weeksBiggestGainer } from "~/utils/tournament"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
-import { createGameNotification } from "./routerUtils"
+import { getUser, upsertGameNotification } from "./routerUtils"
 import { findStreakFromRatings } from "~/utils/utils"
 
 const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
@@ -342,40 +342,22 @@ export const tournamentRouter = createTRPCRouter({
           player2: true,
         }
       })
-      if (!game) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Game not found'
-        })
-      }
+      assert(game)
+
       if (game && game.tournamentId) {
         await ensureTournamentIsNotLocked(ctx.prisma, game.tournamentId)
       }
-      if (!ctx.session.user.email) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Session required.'
-        })
-      }
-      const sessionUser = await ctx.prisma.user.findFirst({
-        where: {
-          email: ctx.session.user.email
-        }
-      })
+
+      const sessionUser = await getUser(ctx.prisma, ctx.session.user.email!)
       if (!sessionUser || (![game.player1Id, game.player2Id].includes(sessionUser.id) && sessionUser.role != 'admin')) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You have to be an involved in the game, or be an admin, to change the score'
         })
       }
-      const player1 = game?.player1
-      const player2 = game?.player2
-      if (!(player1 && player2)) {
-        return {
-          updatedGame: null,
-          nextRound: null
-        }
-      }
+
+      assert(game?.player1 && game?.player2)
+
       await ctx.prisma.rating.deleteMany({
         where: {
           gameId: input.gameId
@@ -418,6 +400,7 @@ export const tournamentRouter = createTRPCRouter({
           time: 'desc'
         }
       })
+      assert(player1Rating && player2Rating)
       const { player1NewRating, player2NewRating, player1RatingChange, player2RatingChange } = calculateNewRatings(player1Rating.rating, player2Rating.rating, input.player1Points > input.player2Points)
       await ctx.prisma.rating.create({
         data: {
@@ -443,6 +426,7 @@ export const tournamentRouter = createTRPCRouter({
           }
         }
       })
+
       const updatedGame = await ctx.prisma.game.update({
         where: {
           id: input.gameId
@@ -450,35 +434,25 @@ export const tournamentRouter = createTRPCRouter({
         data: {
           player1Points: input.player1Points,
           player2Points: input.player2Points,
-          time: new Date(),
+          lastModifiedTime: new Date(),
           lastModifiedUser: {
             connect: {
               id: sessionUser.id
             }
           }
         },
-        select: {
+        include: {
           player1: true,
           player2: true,
-          type: true,
-          tournamentId: true,
-          time: true,
-          round: true,
-          level: true,
-          nextRoundId: true,
-          id: true,
-          player1Points: true,
-          player2Points: true,
-          player1Id: true,
-          player2Id: true,
-          poolId: true
+          notifications: true
         }
       })
-      createGameNotification(updatedGame, 'Game score edited', ctx)
+      await upsertGameNotification(updatedGame, 'Game score edited', ctx.prisma, sessionUser)
+
       if (updatedGame.type == 'group') {
-        const canStart = await canStartKnockoutRounds(ctx.prisma, updatedGame.tournamentId)
+        const canStart = await canStartKnockoutRounds(ctx.prisma, updatedGame.tournamentId!)
         if (canStart) {
-          await startKnockoutRounds(ctx.prisma, updatedGame.tournamentId)
+          await startKnockoutRounds(ctx.prisma, updatedGame.tournamentId!)
         }
       } else if (updatedGame.type == 'knockout') {
         const nextRound = await setNextRoundPlayers(ctx.prisma, updatedGame)
@@ -486,10 +460,12 @@ export const tournamentRouter = createTRPCRouter({
           updatedGame,
           nextRound
         }
-      }
-      return {
-        updatedGame,
-        nextRound: null
+      } else {
+        // For non tournament games
+        return {
+          updatedGame,
+          nextRound: null
+        }
       }
     }),
   overviewStats: protectedProcedure
@@ -627,7 +603,7 @@ export const tournamentRouter = createTRPCRouter({
           id: input.tournamentId
         },
         data: {
-          isLocked: !tournamentLocked.isLocked
+          isLocked: !(tournamentLocked!.isLocked)
         },
         select: {
           id: true,

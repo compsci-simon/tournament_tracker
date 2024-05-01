@@ -1,25 +1,12 @@
-import { Prisma, PrismaClient, User } from "@prisma/client";
-import { DefaultArgs } from "@prisma/client/runtime";
+import { PrismaClient, User } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { GameWithPlayers } from "~/types";
+import { GameWithPlayersAndNotification } from "~/types";
 
 
-export const getUser = async (ctx: {
-  session: {
-    user: {
-      role: string;
-    } & {
-      name?: string | null;
-      email?: string;
-      image?: string;
-    };
-    expires: string;
-  };
-  prisma: PrismaClient<Prisma.PrismaClientOptions, never, Prisma.RejectOnNotFound | Prisma.RejectPerOperation, DefaultArgs>;
-}): Promise<User> => {
-  const user = await ctx.prisma.user.findFirst({
+export const getUser = async (prisma: PrismaClient, email: string): Promise<User> => {
+  const user = await prisma.user.findFirst({
     where: {
-      email: ctx.session.user.email
+      email: email
     }
   })
   if (!user) {
@@ -31,24 +18,25 @@ export const getUser = async (ctx: {
   return user
 }
 
-export const createGameNotification = async (
-  game: GameWithPlayers,
+export const upsertGameNotification = async (
+  game: GameWithPlayersAndNotification,
   message: string,
-  ctx: {
-    session: {
-      user: {
-        role: string;
-      } & {
-        name?: string;
-        email?: string;
-        image?: string;
-      };
-      expires: string;
-    };
-    prisma: PrismaClient<Prisma.PrismaClientOptions, never, Prisma.RejectOnNotFound | Prisma.RejectPerOperation, DefaultArgs>;
-  }) => {
-  const user = await getUser(ctx)
-  await ctx.prisma.gameNotification.create({
+  prisma: PrismaClient,
+  user: User
+) => {
+  const notification = game.notifications.at(0)
+  if (notification != undefined) {
+    return await prisma.gameNotification.update({
+      where: {
+        id: notification.id
+      },
+      data: {
+        seenByPlayer1: user.id == game.player1Id,
+        seenByPlayer2: user.id == game.player2Id
+      }
+    })
+  }
+  return await prisma.gameNotification.create({
     data: {
       game: {
         connect: {
