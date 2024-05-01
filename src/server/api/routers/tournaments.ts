@@ -1,4 +1,4 @@
-import { Game, PrismaClient, Rating } from "@prisma/client"
+import { Game, PrismaClient, Rating, User } from "@prisma/client"
 import { TRPCError } from "@trpc/server"
 import assert from "assert"
 import { z } from "zod"
@@ -177,6 +177,85 @@ const getLongestWinStreak = async (prisma: PrismaClient) => {
   }
 }
 
+/**
+ * This function updates the ratings of users involved in a game. It cascades these updates to influence all subsequent games.
+ */
+const updatePlayerRatings = async (prisma: PrismaClient, gameId: string) => {
+  const game = await prisma.game.findFirst({
+    where: { id: gameId },
+    include: { ratings: true }
+  })
+  assert(game)
+  const player1Id = game.player1Id!
+  const player2Id = game.player2Id!
+  const player1RatingItem = game.ratings.find(rating => rating.userId == player1Id)!
+  const player2RatingItem = game.ratings.find(rating => rating.userId == player2Id)!
+  // We must subtract the rating change to get the rating before that game.
+  const player1CurrentRating = player1RatingItem.rating - player1RatingItem.ratingChange
+  const player2CurrentRating = player2RatingItem.rating - player2RatingItem.ratingChange
+  const {
+    player1NewRating,
+    player2NewRating,
+    player1RatingChange,
+    player2RatingChange
+  } = calculateNewRatings(player1CurrentRating, player2CurrentRating, game.player1Points > game.player2Points)
+  // Update the old ratings
+  await prisma.rating.update({
+    where: {
+      id: player1RatingItem.id
+    },
+    data: {
+      rating: player1NewRating,
+      ratingChange: player1RatingChange
+    }
+  })
+  await prisma.rating.update({
+    where: {
+      id: player2RatingItem.id
+    },
+    data: {
+      rating: player2NewRating,
+      ratingChange: player2RatingChange
+    }
+  })
+  // Update every rating of player 1 since the game
+  const player1Ratings = await prisma.rating.findMany({
+    where: { userId: player1Id, time: { gt: game.time } },
+    orderBy: { time: 'asc' },
+    select: { id: true, ratingChange: true }
+  })
+  let newRating = player1NewRating
+  for (let rating of player1Ratings) {
+    newRating = newRating += rating.ratingChange
+    await prisma.rating.update({ where: { id: rating.id }, data: { rating: newRating } })
+  }
+  // Update every rating of player 2 since the game
+  const player2Ratings = await prisma.rating.findMany({
+    where: { userId: player2Id, time: { gt: game.time } },
+    orderBy: { time: 'asc' },
+    select: { id: true, ratingChange: true }
+  })
+  newRating = player2NewRating
+  for (let rating of player2Ratings) {
+    newRating = newRating += rating.ratingChange
+    await prisma.rating.update({ where: { id: rating.id }, data: { rating: newRating } })
+  }
+}
+
+/**
+ * This method ensures that only a user that participated in a game (or an admin)
+ * can modify the game results. This prevents users from going about changing
+ * scores for games they were not involved in.
+ */
+const assertUserCanUpdateGame = (user: User, game: Game) => {
+  if (!user || (![game.player1Id, game.player2Id].includes(user.id) && user.role != 'admin')) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You have to be an involved in the game, or be an admin, to change the score'
+    })
+  }
+}
+
 export const ensureTournamentIsNotLocked = async (prisma: PrismaClient, tournamentId: string) => {
   const tournamentIsLocked = await prisma.tournament.findFirst({
     where: {
@@ -333,100 +412,19 @@ export const tournamentRouter = createTRPCRouter({
       player2Points: z.number().gte(0)
     }))
     .mutation(async ({ ctx, input }) => {
+      const sessionUser = await getUser(ctx.prisma, ctx.session.user.email!)
       const game = await ctx.prisma.game.findFirst({
-        where: {
-          id: input.gameId
-        },
-        include: {
-          player1: true,
-          player2: true,
-        }
+        where: { id: input.gameId },
+        include: { player1: true, player2: true, notifications: true }
       })
-      assert(game)
+      assert(sessionUser && game)
 
-      if (game && game.tournamentId) {
+      if (game.tournamentId) {
         await ensureTournamentIsNotLocked(ctx.prisma, game.tournamentId)
       }
 
-      const sessionUser = await getUser(ctx.prisma, ctx.session.user.email!)
-      if (!sessionUser || (![game.player1Id, game.player2Id].includes(sessionUser.id) && sessionUser.role != 'admin')) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You have to be an involved in the game, or be an admin, to change the score'
-        })
-      }
-
+      assertUserCanUpdateGame(sessionUser, game)
       assert(game?.player1 && game?.player2)
-
-      await ctx.prisma.rating.deleteMany({
-        where: {
-          gameId: input.gameId
-        }
-      })
-      await ctx.prisma.gameNotification.deleteMany({
-        where: {
-          gameId: input.gameId
-        }
-      })
-      if (input.player1Points == 0 && input.player2Points == 0) {
-        const updatedGame = await ctx.prisma.game.update({
-          where: {
-            id: input.gameId
-          },
-          data: {
-            player1Points: 0,
-            player2Points: 0,
-          }
-        })
-        createGameNotification(game, 'Game score edited', ctx)
-        return {
-          updatedGame,
-          nextRound: null
-        }
-      }
-      const player1Rating = await ctx.prisma.rating.findFirst({
-        where: {
-          userId: player1?.id ?? ''
-        },
-        orderBy: {
-          time: 'desc'
-        }
-      })
-      const player2Rating = await ctx.prisma.rating.findFirst({
-        where: {
-          userId: player2?.id ?? ''
-        },
-        orderBy: {
-          time: 'desc'
-        }
-      })
-      assert(player1Rating && player2Rating)
-      const { player1NewRating, player2NewRating, player1RatingChange, player2RatingChange } = calculateNewRatings(player1Rating.rating, player2Rating.rating, input.player1Points > input.player2Points)
-      await ctx.prisma.rating.create({
-        data: {
-          rating: player1NewRating,
-          ratingChange: player1RatingChange,
-          player: {
-            connect: ({ id: player1.id })
-          },
-          game: {
-            connect: ({ id: game.id })
-          }
-        }
-      })
-      await ctx.prisma.rating.create({
-        data: {
-          rating: player2NewRating,
-          ratingChange: player2RatingChange,
-          player: {
-            connect: ({ id: player2.id })
-          },
-          game: {
-            connect: ({ id: game.id })
-          }
-        }
-      })
-
       const updatedGame = await ctx.prisma.game.update({
         where: {
           id: input.gameId
@@ -447,6 +445,7 @@ export const tournamentRouter = createTRPCRouter({
           notifications: true
         }
       })
+      await updatePlayerRatings(ctx.prisma, game.id)
       await upsertGameNotification(updatedGame, 'Game score edited', ctx.prisma, sessionUser)
 
       if (updatedGame.type == 'group') {
