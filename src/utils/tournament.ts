@@ -216,13 +216,13 @@ function calculateExpectedOutcome(playerRatingA: number, playerRatingB: number) 
 
 export const calculateNewRatings = (player1Rating: number, player2Rating: number, player1Wins: boolean) => {
 
-  const expectedOutcome1 = calculateExpectedOutcome(player1Rating, player2Rating)
-  const expectedOutcome2 = 1 - expectedOutcome1
+  const player1WinProb = calculateExpectedOutcome(player1Rating, player2Rating)
+  const player2WinProb = 1 - player1WinProb
   const outcome = player1Wins ? 1 : 0
-  const player1RatingChange = kFactor * (outcome - expectedOutcome1)
-  const player2RatingChange = kFactor * ((1 - outcome) - expectedOutcome2)
-  const player1NewRating = (player1Rating) + player1RatingChange
-  const player2NewRating = (player2Rating) + player2RatingChange
+  const player1RatingChange = kFactor * (outcome - player1WinProb)
+  const player2RatingChange = kFactor * ((1 - outcome) - player2WinProb)
+  const player1NewRating = player1Rating + player1RatingChange
+  const player2NewRating = player2Rating + player2RatingChange
   return {
     player1NewRating,
     player2NewRating,
