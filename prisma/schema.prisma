@@ -39,26 +39,27 @@ model Session {
 }
 
 model User {
-    id            String       @id @default(cuid())
-    email         String       @unique
-    createdAt     DateTime     @default(now())
-    name          String       @unique
-    password      String       @default("866091acb5ff40f25f6d72b9ed3152c7dfb7fb605d5f39b4dec2a2e9f3e99202")
-    nickName      String?
-    avatar        String
-    role          String       @default("player")
-    gender        String
-    tournaments   Tournament[]
-    player1Games  Game[]       @relation("player1")
-    player2Games  Game[]       @relation("player2")
-    userGames     UserGame[]
-    ratings       Rating[]
-    trophies      Trophy[]
-    accounts      Account[]
-    sessions      Session[]
-    emailVerified DateTime?
-    image         String?
-    Game          Game[]
+    id             String       @id @default(cuid())
+    email          String       @unique
+    createdAt      DateTime     @default(now())
+    name           String       @unique
+    password       String       @default("866091acb5ff40f25f6d72b9ed3152c7dfb7fb605d5f39b4dec2a2e9f3e99202")
+    nickName       String?
+    avatar         String
+    role           String       @default("player")
+    gender         String
+    tournaments    Tournament[] @relation(name: "TournamentPlayers")
+    tournamentsWon Tournament[] @relation(name: "TournamentWinner")
+    player1Games   Game[]       @relation("player1")
+    player2Games   Game[]       @relation("player2")
+    userGames      UserGame[]
+    ratings        Rating[]
+    trophies       Trophy[]
+    accounts       Account[]
+    sessions       Session[]
+    emailVerified  DateTime?
+    image          String?
+    Game           Game[]
 }
 
 model VerificationToken {
@@ -134,7 +135,9 @@ model Tournament {
     numRounds      Int
     name           String
     isLocked       Boolean        @default(false)
-    players        User[]
+    winnerId       String?
+    winner         User?          @relation(name: "TournamentWinner", fields: [winnerId], references: [id])
+    players        User[]         @relation(name: "TournamentPlayers")
     games          Game[]
     TournamentJob  TournamentJob?
 }
