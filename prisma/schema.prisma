@@ -109,7 +109,7 @@ model Game {
     player1            User?              @relation("player1", fields: [player1Id], references: [id])
     player2Id          String?
     player2            User?              @relation("player2", fields: [player2Id], references: [id])
-    type               String             @default("group")
+    type               String             @default("quick")
     level              Int?
     // The `group` field indicates the pool to which this game belongs
     poolId             String?
