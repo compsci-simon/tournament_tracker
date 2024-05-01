@@ -79,16 +79,31 @@ export const notificationsRouter = createTRPCRouter({
       })
       return notifications
     }),
+  setGameSeen: protectedProcedure
+    .input(z.object({ gameId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await getUser(ctx.prisma, ctx.session.user.email!)
+      const game = await ctx.prisma.game.findFirst({
+        where: {
+          id: input.gameId
+        },
+        include: {
+          notifications: true
+        }
+      })
+      const notificationId = game?.notifications.at(0)!.id
+      return await markNotificationAsSeen(ctx.prisma, user, notificationId!)
+    }),
   playerSawNotification: protectedProcedure
     .input(z.object({ notificationId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const user = await getUser(ctx)
+      const user = await getUser(ctx.prisma, ctx.session.user.email!)
       return await markNotificationAsSeen(ctx.prisma, user, input.notificationId)
     }),
   markSelectNotificationsAsRead: protectedProcedure
     .input(z.object({ notificationIds: z.array(z.string()) }))
     .mutation(async ({ ctx, input }) => {
-      const user = await getUser(ctx)
+      const user = await getUser(ctx.prisma, ctx.session.user.email!)
       const notifications: { [id: string]: GameNotification } = {}
       for (let i = 0; i < input.notificationIds.length; i++) {
         const notification = await markNotificationAsSeen(ctx.prisma, user, input.notificationIds[i])
