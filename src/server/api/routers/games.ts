@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { calculateNewRatings } from "~/utils/tournament";
-import { createGameNotification } from "./routerUtils";
+import { upsertGameNotification } from "./routerUtils";
 import { ensureTournamentIsNotLocked } from "./tournaments";
 import { TRPCError } from "@trpc/server";
 
@@ -144,10 +144,11 @@ export const gamesRouter = createTRPCRouter({
         },
         include: {
           player1: true,
-          player2: true
+          player2: true,
+          notifications: true
         }
       })
-      createGameNotification(newGame, 'You are involved in a new game that was created.', ctx)
+      upsertGameNotification(newGame, 'You are involved in a new game that was created.', ctx.prisma, sessionUser)
       return newGame
     }),
   getGame: protectedProcedure
@@ -159,7 +160,9 @@ export const gamesRouter = createTRPCRouter({
         },
         include: {
           player1: true,
-          player2: true
+          player2: true,
+          notifications: true,
+          lastModifiedUser: true
         }
       })
     }),
