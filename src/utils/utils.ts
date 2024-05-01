@@ -29,3 +29,7 @@ export function groupItemsByKey<Item>(items: Item[], key: string): Record<string
     return acc;
   }, {} as Record<string, Item[]>);
 }
+
+export const capitalizeFirstLetter = (str: string) => {
+  return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase()
+}
