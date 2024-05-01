@@ -8,29 +8,21 @@ import { getUser, upsertGameNotification } from "./routerUtils"
 import { findStreakFromRatings } from "~/utils/utils"
 
 const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
-  const groupGames = await prisma.game.findMany({
-    where: {
-      tournamentId,
-      type: 'group',
-    },
-    select: {
-      ratings: true,
-    }
-  })
-  const unplayedGames = groupGames.find(g => g.ratings.length != 2)
-  if (unplayedGames) return false;
-  const knockoutGames = await prisma.game.findMany({
-    where: {
-      tournamentId,
-      type: 'knockout'
-    }
-  })
-  if (knockoutGames.some(g => g.player1Id)) return false;
-  return true
+  const games = await prisma.game.findMany({ where: { tournamentId } })
+  const unplayedGroupGame = games
+    .filter(game => game.type == 'group')
+    .every(game => game.player1Points == 0 && game.player2Points == 0)
+  if (unplayedGroupGame) return false;
+  const knockoutRoundsHaveStarted = games
+    .filter(game => game.type == 'knockout')
+    .some(game => game.player1Points > 0 || game.player2Points > 0)
+  return !knockoutRoundsHaveStarted
 }
 
 const startKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
 
+  const canStart = await canStartKnockoutRounds(prisma, tournamentId!)
+  if (!canStart) return
   const games = await prisma.game.findMany({
     where: {
       tournamentId: tournamentId
@@ -73,16 +65,8 @@ const startKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) =
         id: level0Games[i].id
       },
       data: {
-        player1: {
-          connect: {
-            id: player1Id
-          }
-        },
-        player2: {
-          connect: {
-            id: player2Id
-          }
-        }
+        player1: { connect: { id: player1Id } },
+        player2: { connect: { id: player2Id } }
       }
     })
   }
@@ -90,10 +74,9 @@ const startKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) =
 
 const setNextRoundPlayers = async (prisma: PrismaClient, game: Game) => {
   // If this game has no next round, return
-  if (!game.nextRoundId) return
   const nextRoundGame = await prisma.game.findFirst({
     where: {
-      id: game.nextRoundId
+      id: game.nextRoundId!
     }
   })
   if (!nextRoundGame) {
@@ -186,6 +169,7 @@ const updatePlayerRatings = async (prisma: PrismaClient, gameId: string) => {
     include: { ratings: true }
   })
   assert(game)
+  if (game.ratings.length == 0) return
   const player1Id = game.player1Id!
   const player2Id = game.player2Id!
   const player1RatingItem = game.ratings.find(rating => rating.userId == player1Id)!
@@ -273,6 +257,29 @@ export const ensureTournamentIsNotLocked = async (prisma: PrismaClient, tourname
       message: "Tournament is locked, and cannot be modified."
     })
   }
+}
+
+const setTournamentWinner = async (prisma: PrismaClient, tournamentId: string | null) => {
+  if (!tournamentId) return
+
+  const games = await prisma.game.findMany({ where: { tournamentId: tournamentId } })
+  const allGamesFinished = games
+    .every(game => game.player1Points > 0 || game.player2Points > 0)
+  if (!allGamesFinished) return
+
+  const sortedGames = games
+    .filter(game => game.type == 'knockout')
+    .sort((a, b) => b.level! - a.level!)
+
+  assert(sortedGames.at(0)!.level! > sortedGames.at(1)!.level!)
+  const lastGame = sortedGames.at(0)!
+  const winnerId = lastGame.player1Points > lastGame.player2Points ? lastGame.player1Id : lastGame.player2Id
+  assert(winnerId)
+
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { winner: { connect: { id: winnerId } }, isLocked: true }
+  })
 }
 
 export const tournamentRouter = createTRPCRouter({
@@ -448,10 +455,12 @@ export const tournamentRouter = createTRPCRouter({
       await updatePlayerRatings(ctx.prisma, game.id)
       await upsertGameNotification(updatedGame, 'Game score edited', ctx.prisma, sessionUser)
 
+      await setTournamentWinner(ctx.prisma, game.tournamentId)
       if (updatedGame.type == 'group') {
-        const canStart = await canStartKnockoutRounds(ctx.prisma, updatedGame.tournamentId!)
-        if (canStart) {
-          await startKnockoutRounds(ctx.prisma, updatedGame.tournamentId!)
+        await startKnockoutRounds(ctx.prisma, updatedGame.tournamentId!)
+        return {
+          updatedGame,
+          nextRound: null
         }
       } else if (updatedGame.type == 'knockout') {
         const nextRound = await setNextRoundPlayers(ctx.prisma, updatedGame)
@@ -492,12 +501,18 @@ export const tournamentRouter = createTRPCRouter({
       const longestStreak = await getLongestWinStreak(ctx.prisma)
       const mostRecentGame = await ctx.prisma.game.findFirst({
         orderBy: {
-          time: 'asc'
+          time: 'desc'
         },
         include: {
           player1: true,
           player2: true
         }
+      })
+      assert(mostRecentGame)
+      const latestTournamentWinner = await ctx.prisma.tournament.findFirst({
+        where: { winnerId: { not: null } },
+        orderBy: { startDate: 'desc' },
+        include: { winner: true }
       })
 
       return {
@@ -508,7 +523,7 @@ export const tournamentRouter = createTRPCRouter({
         allTimeBest: await getAllTimeTopPlayers(ctx.prisma),
         longestStreak,
         mostRecentGame,
-        latestTournamentWinner: null
+        latestTournamentWinner
       }
     }),
   tournamentsStats: protectedProcedure
@@ -518,7 +533,7 @@ export const tournamentRouter = createTRPCRouter({
           players: true
         },
         orderBy: {
-          startDate: 'desc'
+          createdAt: 'desc'
         }
       })
       const allGames = await ctx.prisma.game.findMany({
@@ -548,7 +563,6 @@ export const tournamentRouter = createTRPCRouter({
             losses
           }
         })
-        console.log(players)
         return {
           ...tournament,
           players

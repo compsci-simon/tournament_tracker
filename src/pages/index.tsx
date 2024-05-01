@@ -5,6 +5,9 @@ import Layout from '../components/Layout'
 import StraightenIcon from '@mui/icons-material/Straighten';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
+
+const avatarWidth = '30px'
 
 export default function HomePage() {
   const { data: stats } = api.tournament.overviewStats.useQuery()
@@ -143,45 +146,48 @@ export default function HomePage() {
                   <Stack spacing={2}>
                     <Stack direction='row' spacing={1}>
                       <AccessTimeIcon />
-                      <Typography variant='overline' sx={{ fontSize: '9px' }}>
-                        Most recent game
-                      </Typography>
+                      <Typography variant='overline' sx={{ fontSize: '9px' }}>Most recent game</Typography>
                     </Stack>
-                    {stats?.mostRecentGame ?
-                      (
-                        <Stack>
-                          <Stack direction='row' alignItems='center' spacing={1}>
-                            <img src={stats.mostRecentGame.player1.avatar} style={{ width: '30px' }} />
-                            <Typography variant="overline">{stats.mostRecentGame.player1.name} - {stats.mostRecentGame.player1Points}</Typography>
-                          </Stack>
-                          <Stack direction='row' alignItems='center' spacing={1}>
-                            <img src={stats.mostRecentGame.player2.avatar} style={{ width: '30px' }} />
-                            <Typography variant="overline">{stats.mostRecentGame.player2.name} - {stats.mostRecentGame.player2Points}</Typography>
-                          </Stack>
+
+                    {stats?.mostRecentGame ? (
+                      <Stack>
+                        <Stack direction='row' alignItems='center' spacing={1}>
+                          <img src={stats.mostRecentGame.player1!.avatar} style={{ width: avatarWidth }} />
+                          <Typography variant="overline">{stats.mostRecentGame.player1!.name} - {stats.mostRecentGame.player1Points}</Typography>
                         </Stack>
-                      ) : <Typography>No games have been played</Typography>
+                        <Stack direction='row' alignItems='center' spacing={1}>
+                          <img src={stats.mostRecentGame.player2!.avatar} style={{ width: avatarWidth }} />
+                          <Typography variant="overline">{stats.mostRecentGame.player2!.name} - {stats.mostRecentGame.player2Points}</Typography>
+                        </Stack>
+                      </Stack>
+                    ) : <Typography>No games have been played</Typography>
                     }
                   </Stack>
                 </Box>
               </Paper>
             </Grid>
 
-            {true || stats?.latestTournamentWinner ?
+            {stats?.latestTournamentWinner ? (
               <Grid item md={6}>
                 <Paper>
                   <Box padding={2} minHeight={122}>
                     <Stack spacing={2}>
                       <Stack direction='row' spacing={1}>
-                        <AccessTimeIcon />
+                        <MilitaryTechIcon />
                         <Typography variant='overline' sx={{ fontSize: '9px' }}>
-                          Won
+                          Last tournament winner
                         </Typography>
+                      </Stack>
+
+                      <Stack direction='row' alignItems='center' spacing={1}>
+                        <img src={stats.latestTournamentWinner.winner!.avatar} style={{ width: '30px' }} />
+                        <Typography variant="overline">{stats.latestTournamentWinner.winner!.name} won {stats.latestTournamentWinner.name}</Typography>
                       </Stack>
                     </Stack>
                   </Box>
                 </Paper>
               </Grid>
-              : null
+            ) : null
             }
           </Grid>
         </Grid>

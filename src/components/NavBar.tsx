@@ -24,7 +24,12 @@ import { ThemeContext } from '~/pages/_app';
 import { api } from '~/utils/api';
 import { GameNotification } from '~/types';
 
-const pages = ['Tournaments', 'Players', 'Games', 'Quick-Game'];
+const pages: { title: string, link: string }[] = [
+  { title: 'Tournaments', link: 'tournaments' },
+  { title: 'Players', link: 'players' },
+  { title: 'Games', link: 'games' },
+  { title: 'Quick-Game', link: 'quick-game' }
+];
 const settings = ['Profile', 'Logout'];
 
 const NotificationMenu = ({ anchorElState, notifications }: { anchorElState: [HTMLElement | null, Dispatch<SetStateAction<HTMLElement | null>>], notifications: GameNotification[] }) => {
@@ -234,9 +239,9 @@ function ResponsiveAppBar() {
               }}
             >
               {pages.map((page) => (
-                <Link key={page} href={`/${page.toLowerCase()}`}>
-                  <MenuItem key={page} onClick={handleCloseNavMenu}>
-                    <Typography textAlign="center">{page}</Typography>
+                <Link key={page.link} href={`/${page.link}`}>
+                  <MenuItem key={page.link} onClick={handleCloseNavMenu}>
+                    <Typography textAlign="center">{page.title}</Typography>
                   </MenuItem>
                 </Link>
               ))}
@@ -245,14 +250,14 @@ function ResponsiveAppBar() {
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
               <Button
-                key={page}
+                key={page.link}
                 onClick={() => {
                   handleCloseNavMenu()
-                  void router.push(`/${page.toLowerCase()}`)
+                  void router.push(`/${page.link}`)
                 }}
                 sx={{ my: 2, color: 'white', display: 'block' }}
               >
-                {page}
+                {page.title}
               </Button>
             ))}
           </Box>

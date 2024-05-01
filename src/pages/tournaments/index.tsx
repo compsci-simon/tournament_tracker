@@ -69,7 +69,10 @@ export default function TournamentsPage() {
   const router = useRouter()
   const currentDate = new Date()
   const { dark } = useContext(ThemeContext)
-  const isAdmin = session!.user.role == 'admin'
+
+  if (!session) return null
+
+  const isAdmin = session.user.role == 'admin'
 
   return (
     <Box padding={4}>
@@ -86,12 +89,7 @@ export default function TournamentsPage() {
               return <>
                 <Typography fontSize={12}>You are <b>not</b> set to take part in this tournament!</Typography>
                 <Box>
-                  <Button
-                    variant='outlined'
-                    onClick={joinTournament}
-                  >
-                    Join
-                  </Button>
+                  <Button variant='outlined' onClick={joinTournament}>Join</Button>
                 </Box>
               </>
             }
@@ -190,9 +188,11 @@ export default function TournamentsPage() {
 }
 
 TournamentsPage.getLayout = function getLayout(page: React.ReactElement) {
-  return <Layout>
-    {page}
-  </Layout>
+  return (
+    <Layout>
+      {page}
+    </Layout>
+  )
 }
 
 TournamentsPage.auth = true

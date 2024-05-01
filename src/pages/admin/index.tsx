@@ -1,4 +1,4 @@
-import { Box, Button, Modal, Paper, Stack, TextField, Typography } from "@mui/material"
+import { Box, Button, Modal, Paper, Stack, Typography } from "@mui/material"
 
 import { useState } from "react";
 import { DataGrid, GridColDef, GridToolbarContainer } from '@mui/x-data-grid'
@@ -93,20 +93,20 @@ export default function Page() {
   const tabs = [
     {
       title: 'Users',
+      padding: 0,
       content: (
-        <Paper >
-          <DataGrid
-            rows={users ?? []}
-            columns={userColumns}
-            disableRowSelectionOnClick
-            pageSizeOptions={[5]}
-            sx={{ border: 0, minHeight: 500 }}
-          />
-        </Paper>
+        <DataGrid
+          rows={users ?? []}
+          columns={userColumns}
+          disableRowSelectionOnClick
+          pageSizeOptions={[5]}
+          sx={{ border: 0, minHeight: 500 }}
+        />
       )
     },
     {
       title: 'Tournaments',
+      padding: 0,
       content: (
         <Paper >
           <DataGrid
@@ -125,8 +125,10 @@ export default function Page() {
   ]
 
   return (
-    <Box padding={4}>
-      <TabPanel tabs={tabs} />
+    <Box p={4}>
+      <Paper>
+        <TabPanel tabs={tabs} />
+      </Paper>
     </Box>
   )
 }

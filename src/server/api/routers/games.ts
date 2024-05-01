@@ -15,13 +15,15 @@ export const gamesRouter = createTRPCRouter({
           player1: {
             select: {
               id: true,
-              name: true
+              name: true,
+              email: true
             }
           },
           player2: {
             select: {
               id: true,
-              name: true
+              name: true,
+              email: true
             }
           },
           ratings: {
