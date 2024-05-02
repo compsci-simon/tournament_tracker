@@ -169,60 +169,86 @@ const updatePlayerRatings = async (prisma: PrismaClient, gameId: string) => {
     include: { ratings: true }
   })
   assert(game)
-  if (game.ratings.length == 0) return
   const player1Id = game.player1Id!
   const player2Id = game.player2Id!
-  const player1RatingItem = game.ratings.find(rating => rating.userId == player1Id)!
-  const player2RatingItem = game.ratings.find(rating => rating.userId == player2Id)!
-  // We must subtract the rating change to get the rating before that game.
-  const player1CurrentRating = player1RatingItem.rating - player1RatingItem.ratingChange
-  const player2CurrentRating = player2RatingItem.rating - player2RatingItem.ratingChange
+  const previousPlayer1RatingItem = await prisma.rating.findFirst({
+    where: { userId: game.player1Id!, time: { lt: game.time } },
+    orderBy: { time: 'desc' }
+  })
+  const previousPlayer2RatingItem = await prisma.rating.findFirst({
+    where: { userId: game.player2Id!, time: { lt: game.time } },
+    orderBy: { time: 'desc' }
+  })
   const {
     player1NewRating,
     player2NewRating,
     player1RatingChange,
     player2RatingChange
-  } = calculateNewRatings(player1CurrentRating, player2CurrentRating, game.player1Points > game.player2Points)
-  // Update the old ratings
-  await prisma.rating.update({
-    where: {
-      id: player1RatingItem.id
-    },
-    data: {
-      rating: player1NewRating,
-      ratingChange: player1RatingChange
+  } = calculateNewRatings(previousPlayer1RatingItem!.rating, previousPlayer2RatingItem!.rating, game.player1Points > game.player2Points)
+
+  if (game.ratings.length == 0) {
+    // There are currently no ratings
+    await prisma.rating.create({
+      data: {
+        rating: player1NewRating,
+        ratingChange: player1RatingChange,
+        player: { connect: { id: player1Id } },
+        game: { connect: { id: game.id } }
+      }
+    })
+    await prisma.rating.create({
+      data: {
+        rating: player2NewRating,
+        ratingChange: player2RatingChange,
+        player: { connect: { id: player2Id } },
+        game: { connect: { id: game.id } }
+      }
+    })
+    return
+  } else {
+    // Update the old ratings
+    const player1RatingItem = game.ratings.find(rating => rating.userId == player1Id)!
+    const player2RatingItem = game.ratings.find(rating => rating.userId == player2Id)!
+    await prisma.rating.update({
+      where: {
+        id: player1RatingItem.id
+      },
+      data: {
+        rating: player1NewRating,
+        ratingChange: player1RatingChange
+      }
+    })
+    await prisma.rating.update({
+      where: {
+        id: player2RatingItem.id
+      },
+      data: {
+        rating: player2NewRating,
+        ratingChange: player2RatingChange
+      }
+    })
+    // Update every rating of player 1 since the game
+    const player1Ratings = await prisma.rating.findMany({
+      where: { userId: player1Id, time: { gt: game.time } },
+      orderBy: { time: 'asc' },
+      select: { id: true, ratingChange: true }
+    })
+    let newRating = player1NewRating
+    for (let rating of player1Ratings) {
+      newRating = newRating += rating.ratingChange
+      await prisma.rating.update({ where: { id: rating.id }, data: { rating: newRating } })
     }
-  })
-  await prisma.rating.update({
-    where: {
-      id: player2RatingItem.id
-    },
-    data: {
-      rating: player2NewRating,
-      ratingChange: player2RatingChange
+    // Update every rating of player 2 since the game
+    const player2Ratings = await prisma.rating.findMany({
+      where: { userId: player2Id, time: { gt: game.time } },
+      orderBy: { time: 'asc' },
+      select: { id: true, ratingChange: true }
+    })
+    newRating = player2NewRating
+    for (let rating of player2Ratings) {
+      newRating = newRating += rating.ratingChange
+      await prisma.rating.update({ where: { id: rating.id }, data: { rating: newRating } })
     }
-  })
-  // Update every rating of player 1 since the game
-  const player1Ratings = await prisma.rating.findMany({
-    where: { userId: player1Id, time: { gt: game.time } },
-    orderBy: { time: 'asc' },
-    select: { id: true, ratingChange: true }
-  })
-  let newRating = player1NewRating
-  for (let rating of player1Ratings) {
-    newRating = newRating += rating.ratingChange
-    await prisma.rating.update({ where: { id: rating.id }, data: { rating: newRating } })
-  }
-  // Update every rating of player 2 since the game
-  const player2Ratings = await prisma.rating.findMany({
-    where: { userId: player2Id, time: { gt: game.time } },
-    orderBy: { time: 'asc' },
-    select: { id: true, ratingChange: true }
-  })
-  newRating = player2NewRating
-  for (let rating of player2Ratings) {
-    newRating = newRating += rating.ratingChange
-    await prisma.rating.update({ where: { id: rating.id }, data: { rating: newRating } })
   }
 }
 

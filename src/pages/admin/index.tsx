@@ -71,17 +71,13 @@ function CustomTournamentToolbar() {
           p: 4,
         }} >
           <Stack spacing={2}>
-            <Typography id="modal-modal-title" variant="h4">
-              New tournament
-            </Typography>
+            <Typography id="modal-modal-title" variant="h4">New tournament</Typography>
             <AddTournament handleSubmit={handleAddClose} handleCancel={handleAddClose} />
           </Stack>
         </Box>
       </Modal>
       <GridToolbarContainer>
-        <Button onClick={() => {
-          setAddModal(true)
-        }}> New Tournament </Button>
+        <Button onClick={() => setAddModal(true)}>New Tournament</Button>
       </GridToolbarContainer>
     </>
   );
