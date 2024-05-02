@@ -51,7 +51,7 @@ const playerInfo = (playerId: string, name: string, dark: boolean) => {
 
       </Stack>
       <hr />
-      <Box flexGrow={2} width='100%'>
+      <Box flexGrow={2} width='100%' sx={{ overflow: 'hidden' }}>
         <LineChart
           options={options(dark)}
           data={{
