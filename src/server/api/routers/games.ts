@@ -34,6 +34,7 @@ export const gamesRouter = createTRPCRouter({
           },
           player1Points: true,
           player2Points: true,
+          type: true
         },
         where: {
           OR: [

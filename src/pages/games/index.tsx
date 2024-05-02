@@ -22,6 +22,9 @@ const CustomToolbar = () => {
 
 const columns: GridColDef[] = [
   {
+    field: 'id', width: 400
+  },
+  {
     field: 'player1', headerName: 'Player 1', sortable: false, filterable: false,
     renderCell(params: { row: { player1: { name: string } } }) {
       return <span>{params.row.player1.name}</span>
@@ -69,6 +72,9 @@ const columns: GridColDef[] = [
     }
   },
   {
+    field: 'type', headerName: 'Game Type', width: 100, sortable: false, editable: false
+  },
+  {
     field: 'none',
     headerName: 'Delete game',
     width: 200,
@@ -92,6 +98,7 @@ const StateContext = createContext<{
   state: any,
   setState: React.Dispatch<React.SetStateAction<any>>
 }>({ state: false, setState: () => { } })
+
 function GamesPage() {
   const { data: games } = api.games.getAll.useQuery()
   const { dark } = useContext(ThemeContext)
@@ -123,9 +130,11 @@ function GamesPage() {
 }
 
 GamesPage.getLayout = function getLayout(page: React.ReactElement) {
-  return <Layout>
-    {page}
-  </Layout>
+  return (
+    <Layout>
+      {page}
+    </Layout>
+  )
 }
 
 GamesPage.auth = true

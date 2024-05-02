@@ -13,17 +13,29 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 
 const columns: GridColDef[] = [
   {
-    field: 'player', headerName: 'Player', renderCell: (params: { row: { name: string } }) => {
+    field: 'player',
+    headerName: 'Player',
+    sortable: false,
+    editable: false,
+    renderCell: (params: { row: { name: string } }) => {
       return params.row.name
     }
   },
   {
-    field: 'wins', headerName: 'Wins', renderCell: (params: { row: { wins: string } }) => {
+    field: 'wins',
+    headerName: 'Wins',
+    sortable: false,
+    editable: false,
+    renderCell: (params: { row: { wins: string } }) => {
       return params.row.wins
     }
   },
   {
-    field: 'losses', headerName: 'Losses', renderCell: (params: { row: { losses: string } }) => {
+    field: 'losses',
+    headerName: 'Losses',
+    sortable: false,
+    editable: false,
+    renderCell: (params: { row: { losses: string } }) => {
       return params.row.losses
     }
   }
@@ -154,7 +166,18 @@ export default function TournamentsPage() {
                   </Stack>
                   {startingSoonInfo()}
                   {
-                    started ? (
+                    tournament.winner && (
+                      <Stack spacing={2} direction='row' alignItems='center'>
+                        <Typography variant='h4'>Tournament winner: {tournament.winner.name}</Typography>
+                        <img src={tournament.winner.avatar} style={{ width: '60px' }} />
+                        <Button
+                          variant='outlined'
+                          onClick={() => { void router.push(`/tournaments/${tournament.id}`).then((r) => { r }).catch(e => console.log(e)) }}
+                        >
+                          View games
+                        </Button>
+                      </Stack>
+                    ) || started && (
                       <>
                         <Box height={300}>
                           <DataGrid
@@ -175,7 +198,7 @@ export default function TournamentsPage() {
                           </Button>
                         </Box>
                       </>
-                    ) : ButtonToShow()
+                    ) || ButtonToShow()
                   }
                 </Stack>
               </Box>
