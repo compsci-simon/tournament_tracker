@@ -204,6 +204,10 @@ const updatePlayerRatings = async (prisma: PrismaClient, gameId: string) => {
         game: { connect: { id: game.id } }
       }
     })
+    await prisma.game.update({
+      where: { id: game.id },
+      data: { time: new Date() }
+    })
     return
   } else {
     // Update the old ratings
