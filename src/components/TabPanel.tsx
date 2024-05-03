@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
@@ -41,12 +41,19 @@ type TabProps = {
   tabs: {
     title: string,
     content: React.ReactElement,
-    padding?: number
+    padding?: number,
   }[]
+  tabIndex?: number
 }
 
-export default function BasicTabs({ tabs }: TabProps) {
+export default function BasicTabs({ tabs, tabIndex }: TabProps) {
   const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (tabIndex) {
+      setValue(tabIndex)
+    }
+  }, [tabIndex])
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);

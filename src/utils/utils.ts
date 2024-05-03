@@ -1,4 +1,5 @@
 import { Rating } from "@prisma/client"
+import * as fs from 'fs'
 
 export const findStreakFromRatings = (ratings: Rating[]) => {
   ratings = ratings.sort((a, b) => a.time.getTime() - b.time.getTime())
@@ -32,4 +33,23 @@ export function groupItemsByKey<Item>(items: Item[], key: string): Record<string
 
 export const capitalizeFirstLetter = (str: string) => {
   return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+type ServerSettings = {
+  tournamentBonusElo: number,
+  decay: {
+    waitPeriod: {
+      unit: 'week' | 'month',
+      quantity: number
+    },
+    decayInterval: {
+      unit: 'week' | 'month',
+      quantity: number
+    },
+    decayAmount: number,
+    decayThreshold: number
+  }
+}
+export const getServerSettings = (): ServerSettings => {
+  return JSON.parse(fs.readFileSync('../serverSettings.json').toString())
 }

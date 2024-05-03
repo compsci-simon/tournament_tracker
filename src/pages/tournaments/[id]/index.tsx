@@ -364,10 +364,11 @@ function MultiStageView({ tournament }: { tournament: TournamentWithPlayersAndGa
 
   const groupGames = tournament.games.filter(game => game.type == 'group')
   const knockoutGames = tournament.games.filter(game => game.type == 'knockout')
+  const [tabIndex, setTabIndex] = useState(0)
 
   const tabs = [
     {
-      title: 'Table',
+      title: 'Group',
       content: <GroupStageTables tournament={tournament} games={groupGames} />
     },
     {
@@ -377,11 +378,17 @@ function MultiStageView({ tournament }: { tournament: TournamentWithPlayersAndGa
     },
   ]
 
+  useEffect(() => {
+    if (knockoutGames.some(game => game.player1Id || game.player2Id)) {
+      setTabIndex(1)
+    }
+  }, [])
+
   return (
     <Container maxWidth='md'>
       <Box padding={2}>
         <Paper>
-          <TabPanel tabs={tabs} />
+          <TabPanel tabs={tabs} tabIndex={tabIndex} />
         </Paper>
       </Box>
     </Container>
@@ -392,9 +399,7 @@ export default function TournamentView() {
   const router = useRouter()
   const { query } = router
   const tournamentId = query.id ? Array.isArray(query.id) ? query.id[0] : query.id : ''
-  const { data: tournament } = api.tournament.getTournament.useQuery({
-    id: tournamentId
-  })
+  const { data: tournament } = api.tournament.getTournament.useQuery({ id: tournamentId })
 
   if (tournament?.type == 'round-robbin') {
     return <RoundRobbinView tournament={tournament} />

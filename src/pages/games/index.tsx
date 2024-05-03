@@ -22,9 +22,6 @@ const CustomToolbar = () => {
 
 const columns: GridColDef[] = [
   {
-    field: 'id', width: 400
-  },
-  {
     field: 'player1', headerName: 'Player 1', sortable: false, filterable: false,
     renderCell(params: { row: { player1: { name: string } } }) {
       return <span>{params.row.player1.name}</span>

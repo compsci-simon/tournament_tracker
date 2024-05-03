@@ -10,6 +10,11 @@
 		"start": "next start",
 		"test": "jest src/test/tournament.test.ts --config=jest.config.js"
 	},
+	"browser": {
+		"fs": false,
+		"os": false,
+		"path": false
+	},
 	"dependencies": {
 		"@emotion/react": "^11.11.1",
 		"@emotion/styled": "^11.11.0",

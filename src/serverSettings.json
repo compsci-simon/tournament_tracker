@@ -1,0 +1,15 @@
+{
+	"tournamentBonusElo": 20,
+	"decay": {
+		"waitPeriod": {
+			"unit": "week",
+			"quantity": 5
+		},
+		"decayInterval": {
+			"unit": "week",
+			"quantity": 1
+		},
+		"decayAmount": 5,
+		"decayThreshold": 1200
+	}
+}

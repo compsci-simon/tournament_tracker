@@ -5,7 +5,8 @@ import { z } from "zod"
 import { calculateNewRatings, getAllTimeTopPlayers, getLeadersFromList, mostGamesUser, weeksBiggestGainer } from "~/utils/tournament"
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc"
 import { getUser, upsertGameNotification } from "./routerUtils"
-import { findStreakFromRatings } from "~/utils/utils"
+import { findStreakFromRatings, getServerSettings } from "~/utils/utils"
+import * as fs from 'fs'
 
 const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
   const games = await prisma.game.findMany({ where: { tournamentId } })
@@ -305,6 +306,16 @@ const setTournamentWinner = async (prisma: PrismaClient, tournamentId: string | 
   const lastGame = sortedGames.at(0)!
   const winnerId = lastGame.player1Points > lastGame.player2Points ? lastGame.player1Id : lastGame.player2Id
   assert(winnerId)
+  const serverSettings = getServerSettings()
+  const lastRating = await prisma.rating.findFirst({ orderBy: { time: 'desc' } })
+  assert(lastRating)
+  await prisma.rating.update({
+    where: { id: lastRating.id },
+    data: {
+      rating: lastRating.rating + serverSettings.tournamentBonusElo ?? 0,
+      ratingChange: lastRating.ratingChange + serverSettings.tournamentBonusElo ?? 0,
+    }
+  })
 
   await prisma.tournament.update({
     where: { id: tournamentId },
@@ -482,7 +493,7 @@ export const tournamentRouter = createTRPCRouter({
           notifications: true
         }
       })
-      await updatePlayerRatings(ctx.prisma, game.id)
+      await updatePlayerRatings(ctx.prisma, game.id!)
       await upsertGameNotification(updatedGame, 'Game score edited', ctx.prisma, sessionUser)
 
       await setTournamentWinner(ctx.prisma, game.tournamentId)
