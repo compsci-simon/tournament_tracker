@@ -86,6 +86,7 @@ model Rating {
     game         Game?    @relation(fields: [gameId], references: [id], onDelete: Cascade)
     gameId       String?
     ratingChange Float
+    cause        String
 }
 
 model UserGame {
