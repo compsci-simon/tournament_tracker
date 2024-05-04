@@ -1,12 +1,8 @@
 {
 	"tournamentBonusElo": 20,
 	"decay": {
-		"waitPeriod": {
-			"unit": "week",
-			"quantity": 5
-		},
 		"decayInterval": {
-			"unit": "week",
+			"unit": "month",
 			"quantity": 1
 		},
 		"decayAmount": 5,
