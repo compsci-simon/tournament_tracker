@@ -1,5 +1,6 @@
-import { Rating } from "@prisma/client"
 import * as fs from 'fs'
+import { Rating } from "@prisma/client"
+import z from 'zod'
 
 export const findStreakFromRatings = (ratings: Rating[]) => {
   ratings = ratings.sort((a, b) => a.time.getTime() - b.time.getTime())
@@ -35,21 +36,30 @@ export const capitalizeFirstLetter = (str: string) => {
   return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase()
 }
 
-type ServerSettings = {
+export type ServerSettings = {
   tournamentBonusElo: number,
   decay: {
-    waitPeriod: {
-      unit: 'week' | 'month',
-      quantity: number
-    },
     decayInterval: {
-      unit: 'week' | 'month',
+      unit: 'day' | 'month',
       quantity: number
     },
     decayAmount: number,
     decayThreshold: number
   }
 }
+
 export const getServerSettings = (): ServerSettings => {
-  return JSON.parse(fs.readFileSync('../serverSettings.json').toString())
+  const parser = z.object({
+    tournamentBonusElo: z.number(),
+    decay: z.object({
+      waitPeriod: z.object({}),
+      decayInterval: z.object({
+        unit: z.union([z.literal('week'), z.literal('month')]),
+        quantity: z.number()
+      })
+    }),
+  })
+  const settings = JSON.parse(fs.readFileSync('../serverSettings.json').toString())
+  parser.parse(settings)
+  return settings
 }
