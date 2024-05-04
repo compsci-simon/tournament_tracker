@@ -49,17 +49,18 @@ export type ServerSettings = {
 }
 
 export const getServerSettings = (): ServerSettings => {
-  const parser = z.object({
+  const serverSettingsParser = z.object({
     tournamentBonusElo: z.number(),
     decay: z.object({
-      waitPeriod: z.object({}),
       decayInterval: z.object({
         unit: z.union([z.literal('week'), z.literal('month')]),
         quantity: z.number()
-      })
+      }),
+      decayAmount: z.number(),
+      decayThreshold: z.number()
     }),
   })
-  const settings = JSON.parse(fs.readFileSync('../serverSettings.json').toString())
-  parser.parse(settings)
-  return settings
+  const serverSettings = JSON.parse(fs.readFileSync('../serverSettings.json').toString())
+  serverSettingsParser.parse(serverSettings)
+  return serverSettings
 }
