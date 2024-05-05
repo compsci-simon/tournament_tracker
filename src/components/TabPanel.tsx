@@ -9,16 +9,18 @@ interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
-  padding: number
+  padding: number,
+  scrollable?: boolean
 }
 
 function TabPanel(props: TabPanelProps) {
-  const { children, value, index, padding, ...other } = props;
+  const { children, value, index, padding, scrollable, ...other } = props;
 
   return (
     <div
       role="tabpanel"
       hidden={value !== index}
+      style={{ flexGrow: 2, overflow: scrollable ? 'auto' : 'hidden' }}
       {...other}
     >
       {value === index && (
@@ -37,11 +39,12 @@ function a11yProps(index: number) {
   };
 }
 
-type TabProps = {
+export type TabProps = {
   tabs: {
     title: string,
     content: React.ReactElement,
     padding?: number,
+    scrollable?: boolean
   }[]
   tabIndex?: number
 }
@@ -60,7 +63,7 @@ export default function BasicTabs({ tabs, tabIndex }: TabProps) {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={value} onChange={handleChange}>
           {tabs.map((tab, index) => {
@@ -70,7 +73,7 @@ export default function BasicTabs({ tabs, tabIndex }: TabProps) {
       </Box>
       {tabs.map((tab, index) => {
         return (
-          <TabPanel key={`${index}`} value={value} index={index} padding={tab.padding ?? 3}>
+          <TabPanel key={`${index}`} value={value} index={index} padding={tab.padding ?? 3} scrollable={tab.scrollable}>
             {tab.content}
           </TabPanel>
         )

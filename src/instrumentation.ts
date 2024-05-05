@@ -128,7 +128,8 @@ const shouldDecay = (rating: Rating, serverSettings: ServerSettings) => {
     const sameDayOfMonth = now.getDay() - rating.time.getDay() == 0
     return monthDiffValid && sameDayOfMonth
   } else if (serverSettings.decay.decayInterval.unit == 'day') {
-    return Math.floor((now.getTime() - rating.time.getTime()) / DayMilliseconds) % serverSettings.decay.decayInterval.quantity
+    const dayDiff = Math.floor((now.getTime() - rating.time.getTime()) / DayMilliseconds)
+    return dayDiff % serverSettings.decay.decayInterval.quantity == 0 && dayDiff > 0
   } else {
     const unit: never = serverSettings.decay.decayInterval.unit
     throw Error(`Unrecognized decay unit: ${unit}`)
@@ -163,5 +164,5 @@ export const register = () => {
   setInterval(() => {
     void startTournaments()
     void eloDecay()
-  }, 1000 * 60 * 60)
+  }, DayMilliseconds)
 }

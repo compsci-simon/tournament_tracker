@@ -28,7 +28,8 @@ const pages: { title: string, link: string }[] = [
   { title: 'Tournaments', link: 'tournaments' },
   { title: 'Players', link: 'players' },
   { title: 'Games', link: 'games' },
-  { title: 'Quick-Game', link: 'quick-game' }
+  { title: 'Quick-Game', link: 'quick-game' },
+  { title: 'Info', link: 'info' },
 ];
 const settings = ['Profile', 'Logout'];
 

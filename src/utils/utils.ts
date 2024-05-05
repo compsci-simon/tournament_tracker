@@ -53,7 +53,7 @@ export const getServerSettings = (): ServerSettings => {
     tournamentBonusElo: z.number(),
     decay: z.object({
       decayInterval: z.object({
-        unit: z.union([z.literal('week'), z.literal('month')]),
+        unit: z.union([z.literal('day'), z.literal('month')]),
         quantity: z.number()
       }),
       decayAmount: z.number(),
