@@ -60,7 +60,8 @@ export const getServerSettings = (): ServerSettings => {
       decayThreshold: z.number()
     }),
   })
-  const serverSettings = JSON.parse(fs.readFileSync('../serverSettings.json').toString())
+  const fileContents = fs.readFileSync('/Users/simon/Developer/tournament_tracker/serverSettings.json').toString()
+  const serverSettings = JSON.parse(fileContents)
   serverSettingsParser.parse(serverSettings)
   return serverSettings
 }
