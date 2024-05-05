@@ -10,9 +10,9 @@ import {
 } from '@mui/material'
 import ReplayIcon from '@mui/icons-material/Replay';
 
-import { api } from '~/utils/api';
+import { api, SetGameType } from '~/utils/api';
 import { modalStyle } from "~/utils/constants";
-import { GameWithPlayers } from '~/types';
+import { GameWithPlayers, GameWithPlayersAndNotification } from '~/types';
 
 const SetGamePointsModal = ({
   open,
@@ -30,7 +30,7 @@ const SetGamePointsModal = ({
   setPlayer1Points: React.Dispatch<number>,
   player2Points: number,
   setPlayer2Points: React.Dispatch<number>,
-  onSuccess: (data, variables, context) => void
+  onSuccess: (data: SetGameType) => void
   game: GameWithPlayers
 }) => {
   const { mutate: updatePointsMutation, isLoading } = api.tournament.setGamePoints.useMutation({ onSuccess })

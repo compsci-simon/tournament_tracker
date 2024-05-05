@@ -50,12 +50,7 @@ export const notificationsRouter = createTRPCRouter({
           email: input.playerEmail
         }
       })
-      if (!user) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Player not found'
-        })
-      }
+      assert(user)
       const notifications = await ctx.prisma.gameNotification.findMany({
         where: {
           game: {
@@ -72,11 +67,10 @@ export const notificationsRouter = createTRPCRouter({
               player2: true
             }
           }
-        },
+        }
       })
-      notifications.sort((notificationA, notificationB) => {
-        return notificationB.game.time.getTime() - notificationA.game.time.getTime()
-      })
+      notifications.sort((a, b) => b.game.time.getTime() - a.game.time.getTime())
+      assert(notifications)
       return notifications
     }),
   setGameSeen: protectedProcedure

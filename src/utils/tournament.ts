@@ -1,4 +1,5 @@
 import { Game, PrismaClient, Rating, User } from "@prisma/client";
+import assert from "assert";
 import { MarkerType, Node } from "reactflow";
 import { v4 as uuidv4 } from 'uuid'
 import { GameWithPlayers, MinimalGame, RatingWithPlayer } from "~/types";
@@ -150,9 +151,7 @@ export const mostGamesUser = (players: User[], games: GameWithPlayers[]) => {
     }
   })
   games.forEach(game => {
-    if (game.player1
-      && (game.player1Points > 0 || game.player2Points > 0)) {
-
+    if ((game.player1 && game.player2) && (game.player1Points > 0 || game.player2Points > 0)) {
       totalGames[game.player1.id].totalGames += 1
       totalGames[game.player2.id].totalGames += 1
     }
@@ -193,17 +192,17 @@ export const getAllTimeTopPlayers = async (prisma: PrismaClient) => {
   Object.keys(groupedRatings).forEach(key => {
     groupedRatings[key].sort((ratingA, ratingB) => ratingB.time.getTime() - ratingA.time.getTime())
   })
-  const sortedRatings = Object.values(groupedRatings).sort((listA, listB) => listB.at(0).rating - listA.at(0).rating)
+  const sortedRatings = Object.values(groupedRatings).sort((listA, listB) => listB.at(0)!.rating - listA.at(0)!.rating)
   const topRatedPlayers = []
   const users = await prisma.user.findMany()
   for (let i = 0; i < 5; i++) {
     const ratingsGroup = sortedRatings.at(i)
-    const rating = ratingsGroup.at(0)
+    const rating = ratingsGroup!.at(0)
     if (!rating) break
     const user = users.find(u => u.id == rating.userId)
     topRatedPlayers.push({
-      name: user.name,
-      avatar: user.avatar,
+      name: user!.name,
+      avatar: user!.avatar,
       rating: rating.rating,
     })
   }
@@ -272,16 +271,19 @@ export const scheduleMultiStageGames = (players: string[]) => {
         time: new Date(),
         player1Points: 0,
         player2Points: 0,
-        nextRoundId: undefined,
-        round: undefined,
-        level: undefined
+        nextRoundId: null,
+        round: null,
+        level: null,
+        lastModifiedTime: new Date(),
+        lastModifiedUserId: null,
+        userId: null
       })
     })
   }
 
   const numPlayersThatProgress = Math.pow(2, Math.floor(Math.log2(totalPlayers)))
 
-  let currentRound = []
+  let currentRound: Game[] = []
   for (let level = 0; level < Math.log2(numPlayersThatProgress); level++) {
     const prevRound = currentRound
     currentRound = []
@@ -295,16 +297,20 @@ export const scheduleMultiStageGames = (players: string[]) => {
         level,
         round: level,
         time: new Date(),
-        poolId: undefined,
-        player1Id: undefined,
-        player2Id: undefined,
+        poolId: null,
+        player1Id: null,
+        player2Id: null,
         player1Points: 0,
         player2Points: 0,
-        nextRoundId: undefined,
+        nextRoundId: null,
+        lastModifiedTime: new Date(),
+        lastModifiedUserId: null,
+        userId: null
       })
       if (level != 0) {
         const match1 = prevRound.pop()
         const match2 = prevRound.pop()
+        assert(match1 && match2)
         match1.nextRoundId = id
         match2.nextRoundId = id
         matches.push(match1)
@@ -312,7 +318,7 @@ export const scheduleMultiStageGames = (players: string[]) => {
       }
     }
   }
-  matches.push(currentRound.pop())
+  matches.push(currentRound.pop()!)
 
   const numRounds = Math.log2(numPlayersThatProgress)
 
@@ -325,10 +331,10 @@ export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinat
   const height = botRight.y - topLeft.y
   const width = botRight.x - topLeft.x
   const numLevel0Games = games.filter(g => g.level == 0).length
-  const numStages = Math.max(...games.map(g => g.level)) + 1
+  const numStages = Math.max(...games.map(g => g.level ?? 0)) + 1
   const yDiffBase = height / numLevel0Games
   const xDiff = width / numStages
-  const twoDGamesArray = []
+  const twoDGamesArray: Game[][] = []
   for (let i = 0; i < numStages; i++) {
     const stageGames = games
       .filter(game => game.level == i)
@@ -368,9 +374,9 @@ export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinat
     })
   })
 
-  twoDGamesArray.forEach((stages: Game[], i) => {
+  twoDGamesArray.forEach((stages, i) => {
     if (i == 0) return;
-    stages.forEach((game, j) => {
+    stages.forEach((_, j) => {
       const newEdge1 = {
         id: uuidv4(),
         source: twoDGamesArray[i - 1][j * 2].id,
@@ -401,9 +407,9 @@ export const calcKnockoutGames = (games: GameWithPlayers[]) => {
   const players = games.reduce((acc, curr) => {
     return {
       ...acc,
-      [curr.player1Id]: curr.player1.name,
-      [curr.player2Id]: curr.player2.name
+      [curr.player1Id!]: curr.player1!.name,
+      [curr.player2Id!]: curr.player2!.name
     }
-  }, {})
+  }, {} as { [key: string]: string })
   return players
 }

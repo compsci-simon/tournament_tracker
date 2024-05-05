@@ -177,7 +177,7 @@ function ResponsiveAppBar() {
     setAnchorElUser(null);
   }
 
-  if (!session?.user.email) return null
+  if (!session?.user.email || !notifications) return null
 
   const unseenNotifications = notifications?.some(notification =>
     session.user.email == notification?.game?.player1?.email ?
