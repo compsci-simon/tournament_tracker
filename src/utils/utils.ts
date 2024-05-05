@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import { Rating } from "@prisma/client"
 import z from 'zod'
+import { env } from '~/env.mjs'
 
 export const findStreakFromRatings = (ratings: Rating[]) => {
   ratings = ratings.sort((a, b) => a.time.getTime() - b.time.getTime())
@@ -60,7 +61,7 @@ export const getServerSettings = (): ServerSettings => {
       decayThreshold: z.number()
     }),
   })
-  const fileContents = fs.readFileSync('/Users/simon/Developer/tournament_tracker/serverSettings.json').toString()
+  const fileContents = fs.readFileSync(env.SERVER_SETTINGS_URL).toString()
   const serverSettings = JSON.parse(fileContents)
   serverSettingsParser.parse(serverSettings)
   return serverSettings

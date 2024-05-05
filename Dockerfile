@@ -1,6 +1,6 @@
 ##### DEPENDENCIES
 
-FROM --platform=linux/amd64 node:16-alpine3.17 AS deps
+FROM --platform=linux/amd64 node:18-alpine3.17 AS deps
 RUN apk add --no-cache libc6-compat openssl1.1-compat
 WORKDIR /app
 
@@ -29,6 +29,7 @@ RUN npm run build;
 
 FROM --platform=linux/amd64 node:16-alpine3.17 AS runner
 WORKDIR /app
+COPY serverSettings.json .
 
 ENV NODE_ENV production
 ENV DATABASE_URL file:./db.sqlite
