@@ -150,7 +150,8 @@ const eloDecay = async () => {
         data: {
           rating: lastRating.rating - serverSettings.decay.decayAmount,
           ratingChange: serverSettings.decay.decayAmount,
-          player: { connect: { id: user.id } }
+          player: { connect: { id: user.id } },
+          cause: 'decay'
         }
       })
     }

@@ -194,7 +194,8 @@ const updatePlayerRatings = async (prisma: PrismaClient, gameId: string) => {
         rating: player1NewRating,
         ratingChange: player1RatingChange,
         player: { connect: { id: player1Id } },
-        game: { connect: { id: game.id } }
+        game: { connect: { id: game.id } },
+        cause: 'game'
       }
     })
     await prisma.rating.create({
@@ -202,7 +203,8 @@ const updatePlayerRatings = async (prisma: PrismaClient, gameId: string) => {
         rating: player2NewRating,
         ratingChange: player2RatingChange,
         player: { connect: { id: player2Id } },
-        game: { connect: { id: game.id } }
+        game: { connect: { id: game.id } },
+        cause: 'game'
       }
     })
     await prisma.game.update({

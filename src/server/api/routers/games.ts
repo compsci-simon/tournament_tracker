@@ -135,8 +135,18 @@ export const gamesRouter = createTRPCRouter({
           },
           ratings: {
             create: [
-              { rating: player1NewRating, userId: player1Id, ratingChange: player1RatingChange },
-              { rating: player2NewRating, userId: player2Id, ratingChange: player2RatingChange },
+              {
+                rating: player1NewRating,
+                userId: player1Id,
+                ratingChange: player1RatingChange,
+                cause: 'game'
+              },
+              {
+                rating: player2NewRating,
+                userId: player2Id,
+                ratingChange: player2RatingChange,
+                cause: 'game'
+              },
             ]
           },
           lastModifiedUser: {

@@ -44,7 +44,7 @@ export const userRouter = createTRPCRouter({
           gender: input.gender,
           role: isAdmin ? 'admin' : 'player',
           ratings: {
-            create: [({ rating: 1200, ratingChange: 0 })]
+            create: [({ rating: 1200, ratingChange: 0, cause: 'initialization' })]
           }
         }
       })
