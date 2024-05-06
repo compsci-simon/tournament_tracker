@@ -151,7 +151,7 @@ export const gamesRouter = createTRPCRouter({
           notifications: true
         }
       })
-      upsertGameNotification(newGame, 'You are involved in a new game that was created.', ctx.prisma, sessionUser)
+      await upsertGameNotification(newGame, 'You are involved in a new game that was created.', ctx.prisma, sessionUser)
       return newGame
     }),
   getGame: protectedProcedure

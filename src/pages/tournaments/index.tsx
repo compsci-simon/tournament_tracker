@@ -186,7 +186,7 @@ export default function TournamentsPage() {
                             disableRowSelectionOnClick
                             pageSizeOptions={[5]}
                             sx={graphSx(dark)}
-                            getRowId={(row) => row.email}
+                            getRowId={(row: { email: string }) => `${row.email}`}
                           />
                         </Box>
                         <Box>

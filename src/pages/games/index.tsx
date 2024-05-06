@@ -77,7 +77,7 @@ const columns: GridColDef[] = [
     width: 200,
     sortable: false,
     filterable: false,
-    renderCell(params) {
+    renderCell(params: { row: { id: string } }) {
       return (
         <Link href={`/games/${params.row.id}`}>
           <Button
@@ -92,9 +92,9 @@ const columns: GridColDef[] = [
 ]
 
 const StateContext = createContext<{
-  state: any,
-  setState: React.Dispatch<React.SetStateAction<any>>
-}>({ state: false, setState: () => { } })
+  state: boolean,
+  setState: React.Dispatch<React.SetStateAction<boolean>>
+}>({ state: false, setState: () => undefined })
 
 function GamesPage() {
   const { data: games } = api.games.getAll.useQuery()

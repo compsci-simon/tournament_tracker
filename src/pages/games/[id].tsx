@@ -1,4 +1,5 @@
 import { Box, Button, Paper, Stack, Tooltip, Typography } from '@mui/material'
+import assert from 'assert'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { enqueueSnackbar } from 'notistack'
@@ -6,7 +7,7 @@ import React, { useEffect, useState } from 'react'
 import Layout from '~/components/Layout'
 import SetGamePointsModal from '~/components/SetGamePointsModal'
 import { api } from '~/utils/api'
-import { capitalizeFirstLetter } from '~/utils/utils'
+import { capitalizeFirstLetter, getString } from '~/utils/utils'
 
 export default function Page() {
   const router = useRouter()
@@ -15,13 +16,8 @@ export default function Page() {
   const [modalOpen, setModalOpen] = useState(false)
   const [player1Points, setPlayer1Points] = useState(0)
   const [player2Points, setPlayer2Points] = useState(0)
-  let gameId = query.id
+  const gameId = getString(query.id)
   let canEditGame = false
-  if (Array.isArray(gameId)) {
-    gameId = 'no defined'
-    console.error('An invalid game ID was provided')
-  }
-  gameId = gameId as string
   const { data: game, isLoading } = api.games.getGame.useQuery({
     gameId: gameId ?? ''
   }, {
@@ -29,8 +25,9 @@ export default function Page() {
   })
   const { mutate: deleteGame } = api.games.deleteGame.useMutation({
     onSuccess() {
-      router.push('/games')
-      enqueueSnackbar('Successfully deleted game', { variant: 'success' })
+      void router.push('/games').then(() => {
+        enqueueSnackbar('Successfully deleted game', { variant: 'success' })
+      })
     }
   })
   const { mutate: setSeenByPlayer } = api.notifications.setGameSeen.useMutation()
@@ -57,7 +54,7 @@ export default function Page() {
 
   useEffect(() => {
     if (game) {
-      setSeenByPlayer({ gameId: game!.id })
+      setSeenByPlayer({ gameId: game.id })
     }
   }, [])
 
@@ -65,7 +62,7 @@ export default function Page() {
 
   // We need a session to continue
   if (!session || !session.user || !session.user.email) return
-  canEditGame = session!.user && ([game.player1?.email, game.player2?.email].includes(session.user.email) || session?.user.role == 'admin')
+  canEditGame = session.user && ([game.player1?.email, game.player2?.email].includes(session.user.email) || session?.user.role == 'admin')
   const cantEditMessage = 'You must be admin or involded in this game'
 
 
@@ -89,11 +86,11 @@ export default function Page() {
               <Typography variant='caption' sx={{ opacity: '0.6' }}>{game?.time.toDateString()}</Typography>
 
               <Stack alignItems='center' direction='row' spacing={2}>
-                <img src={game.player1!.avatar} style={{ width: '40px' }} />
+                <img src={game?.player1?.avatar} style={{ width: '40px' }} />
                 <Typography>{game?.player1?.name}: {player1Points}</Typography>
               </Stack>
               <Stack alignItems='center' direction='row' spacing={2}>
-                <img src={game.player2!.avatar} style={{ width: '40px' }} />
+                <img src={game?.player2?.avatar} style={{ width: '40px' }} />
                 <Typography>{game?.player2?.name}: {player2Points}</Typography>
               </Stack>
 

@@ -18,6 +18,7 @@ import Layout from "~/components/Layout";
 import { api, SetGameType } from "~/utils/api";
 import SetGamePointsModal from "~/components/SetGamePointsModal";
 import { GameWithPlayers } from "~/types";
+import { getString } from "~/utils/utils";
 
 export default function PlayerGroupGames() {
   const router = useRouter()
@@ -44,7 +45,7 @@ export default function PlayerGroupGames() {
       id: tournamentId
     }, (oldData) => {
       if (!oldData) return oldData
-      const updatedGame = data.updatedGame!
+      const updatedGame = data.updatedGame
       return {
         ...oldData,
         games: oldData.games.map(game => {
@@ -77,7 +78,7 @@ export default function PlayerGroupGames() {
       <Box padding={2}>
         <Paper>
           <Box padding={2}>
-            <Link href={`/tournaments/${router.query.id}`}>
+            <Link href={`/tournaments/${getString(router.query.id)}`}>
               <Typography sx={{ textDecoration: 'underline' }} fontSize={18} padding={2}>/tournaments/{tournament.name}</Typography>
             </Link>
             <List disablePadding>

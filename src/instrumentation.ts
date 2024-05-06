@@ -2,7 +2,10 @@ import assert from "assert"
 import { prisma } from "./server/db"
 import { roundRobinScheduleGames, scheduleMultiStageGames } from "./utils/tournament"
 import { getServerSettings, ServerSettings } from "./utils/utils"
-import { Rating } from "@prisma/client"
+import { Game, Rating } from "@prisma/client"
+
+type ConnectType = { connect: { id: string } }
+type NewGame = { userGame?: { create: any[] }, player1?: ConnectType, player2?: ConnectType }
 
 const startTournament = async (tournamentId: string) => {
   const tournament = await prisma.tournament.findFirst({
@@ -24,11 +27,10 @@ const startTournament = async (tournamentId: string) => {
       data: {
         games: {
           create: schedule.map(game => {
-            const gameToReturn: { [key: string]: any } = {
+            const gameToReturn: NewGame = {
               userGame: {
                 create: []
               },
-              round: game.round
             }
             if (game.player1Id) {
               gameToReturn.player1 = {
@@ -36,7 +38,7 @@ const startTournament = async (tournamentId: string) => {
                   id: game.player1Id
                 }
               }
-              gameToReturn.userGame.create.push(({ userId: game.player1Id }))
+              gameToReturn.userGame!.create.push(({ userId: game.player1Id }))
             }
             if (game.player2Id) {
               gameToReturn.player2 = {
@@ -44,7 +46,7 @@ const startTournament = async (tournamentId: string) => {
                   id: game.player2Id
                 }
               }
-              gameToReturn.userGame.create.push(({ userId: game.player2Id }))
+              gameToReturn.userGame!.create.push(({ userId: game.player2Id }))
             }
             return gameToReturn
           })
@@ -62,8 +64,8 @@ const startTournament = async (tournamentId: string) => {
       data: {
         games: {
           create: gameSchedule.map(game => {
-            const newGame: { [key: string]: any } = game
-            delete newGame.tournamentId
+            const newGame: Game & NewGame = game
+            newGame.tournamentId = null
             newGame.userGame = {
               create: []
             }
@@ -75,7 +77,7 @@ const startTournament = async (tournamentId: string) => {
               }
               newGame.userGame.create.push(({ userId: game.player1Id }))
             }
-            delete newGame.player1Id
+            newGame.player1Id = null
             if (game.player2Id) {
               newGame.player2 = {
                 connect: {
@@ -84,7 +86,7 @@ const startTournament = async (tournamentId: string) => {
               }
               newGame.userGame.create.push(({ userId: game.player2Id }))
             }
-            delete newGame.player2Id
+            newGame.player2Id = null
             return newGame
           })
         },
@@ -132,7 +134,7 @@ const shouldDecay = (rating: Rating, serverSettings: ServerSettings) => {
     return dayDiff % serverSettings.decay.decayInterval.quantity == 0 && dayDiff > 0
   } else {
     const unit: never = serverSettings.decay.decayInterval.unit
-    throw Error(`Unrecognized decay unit: ${unit}`)
+    throw Error(`Unrecognized decay unit: ${unit as string}`)
   }
 }
 
@@ -140,8 +142,8 @@ const eloDecay = async () => {
   console.log('Running elo decay')
   const users = await prisma.user.findMany({ select: { id: true } })
   const serverSettings = getServerSettings()
-  for (let user of users) {
-    const lastRating = await prisma.rating.findFirst({ where: { userId: user.id! }, orderBy: { time: 'desc' } })
+  for (const user of users) {
+    const lastRating = await prisma.rating.findFirst({ where: { userId: user.id }, orderBy: { time: 'desc' } })
     assert(lastRating)
     if (shouldDecay(lastRating, serverSettings)) {
       await prisma.rating.create({

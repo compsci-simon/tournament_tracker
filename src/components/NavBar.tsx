@@ -23,6 +23,7 @@ import ThemeSwitch from './ThemeSwitch';
 import { ThemeContext } from '~/pages/_app';
 import { api } from '~/utils/api';
 import { GameNotification } from '~/types';
+import assert from 'assert';
 
 const pages: { title: string, link: string }[] = [
   { title: 'Tournaments', link: 'tournaments' },
@@ -36,13 +37,13 @@ const settings = ['Profile', 'Logout'];
 const NotificationMenu = ({ anchorElState, notifications }: { anchorElState: [HTMLElement | null, Dispatch<SetStateAction<HTMLElement | null>>], notifications: GameNotification[] }) => {
   const { data: session } = useSession()
   const utils = api.useContext()
-  if (!session?.user.email) return null
   const [anchorElNotifications, setAnchorElNotifications] = anchorElState
   const [onlyShowFive, setOnlyShowFive] = useState(true)
   const { mutate: setNotificationAsSeen } = api.notifications.playerSawNotification.useMutation({
     onSuccess(data) {
+      assert(session?.user.email)
       utils.notifications.getPlayerNotifications.setData({
-        playerEmail: session.user.email!
+        playerEmail: session.user.email
       }, oldData => {
         if (!oldData) return oldData
         return oldData.map(notification => {
@@ -61,8 +62,9 @@ const NotificationMenu = ({ anchorElState, notifications }: { anchorElState: [HT
   })
   const { mutate: setNotificationListAsSeen } = api.notifications.markSelectNotificationsAsRead.useMutation({
     onSuccess(data) {
+      assert(session?.user.email)
       utils.notifications.getPlayerNotifications.setData({
-        playerEmail: session.user.email!
+        playerEmail: session.user.email
       }, oldData => {
         if (!oldData) return oldData
         return oldData.map(notification => {
@@ -82,6 +84,7 @@ const NotificationMenu = ({ anchorElState, notifications }: { anchorElState: [HT
   if (onlyShowFive) {
     notifications = notifications?.slice(0, 5)
   }
+  if (!session?.user.email) return null
 
   const handleCloseNotificationsMenu = () => {
     setOnlyShowFive(true)

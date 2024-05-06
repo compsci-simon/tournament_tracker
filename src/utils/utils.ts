@@ -51,7 +51,18 @@ export const getServerSettings = (): ServerSettings => {
     }),
   })
   const fileContents = fs.readFileSync(env.SERVER_SETTINGS_URL).toString()
-  const serverSettings = JSON.parse(fileContents)
+  const serverSettings = (JSON.parse(fileContents) as ServerSettings)
   serverSettingsParser.parse(serverSettings)
   return serverSettings
+}
+
+export const getString = (param: string | string[] | undefined) => {
+  if (param == undefined) {
+    // throw Error('Parameter is undefined')
+    return ''
+  } else if (Array.isArray(param)) {
+    return param[0]
+  } else {
+    return param
+  }
 }

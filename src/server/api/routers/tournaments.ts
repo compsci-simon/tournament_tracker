@@ -22,7 +22,7 @@ const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string
 
 const startKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) => {
 
-  const canStart = await canStartKnockoutRounds(prisma, tournamentId!)
+  const canStart = await canStartKnockoutRounds(prisma, tournamentId)
   if (!canStart) return
   const games = await prisma.game.findMany({
     where: {
@@ -239,7 +239,7 @@ const updatePlayerRatings = async (prisma: PrismaClient, gameId: string) => {
       select: { id: true, ratingChange: true }
     })
     let newRating = player1NewRating
-    for (let rating of player1Ratings) {
+    for (const rating of player1Ratings) {
       newRating = newRating += rating.ratingChange
       await prisma.rating.update({ where: { id: rating.id }, data: { rating: newRating } })
     }
@@ -250,7 +250,7 @@ const updatePlayerRatings = async (prisma: PrismaClient, gameId: string) => {
       select: { id: true, ratingChange: true }
     })
     newRating = player2NewRating
-    for (let rating of player2Ratings) {
+    for (const rating of player2Ratings) {
       newRating = newRating += rating.ratingChange
       await prisma.rating.update({ where: { id: rating.id }, data: { rating: newRating } })
     }

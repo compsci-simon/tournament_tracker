@@ -43,7 +43,7 @@ const columns: (
         field: 'player1',
         headerName: 'Player',
         width: 150,
-        renderCell(params) {
+        renderCell(params: { row: GameWithPlayers }) {
           return params.row.player1?.name
         },
       },
@@ -51,7 +51,7 @@ const columns: (
         field: 'player2',
         headerName: 'Player',
         width: 150,
-        renderCell(params) {
+        renderCell(params: { row: GameWithPlayers }) {
           return params.row.player2?.name
         },
       },
@@ -191,98 +191,104 @@ function RoundRobbinView({ tournament }: { tournament: TournamentWithPlayersAndG
     setPlayer2Points(selectedGameData?.player2Points ?? -1)
   }, [selectedGame])
 
-  return <Box padding={4}>
-    <Modal
-      open={modalState}
-      onClose={() => setModalState(false)}
-    >
-      <Box sx={style}>
-        <Stack spacing={2}>
-          <Typography>{selectedGameData?.player1?.name ?? ''}</Typography>
-          <TextField
-            label='Points'
-            type='number'
-            value={player1Points}
-            onChange={e => {
-              if (parseInt(e.target.value) >= 0) {
-                setPlayer1Points(parseInt(e.target.value))
-              }
-            }}
-          />
-          <Typography>{selectedGameData?.player2?.name ?? ''}</Typography>
-          <TextField
-            label='Points'
-            type='number'
-            value={player2Points}
-            onChange={e => {
-              if (parseInt(e.target.value) >= 0) {
-                setPlayer2Points(parseInt(e.target.value))
-              }
-            }}
-          />
-          <Stack direction='row' spacing={2}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                updatePointsMutation({ gameId: selectedGame ?? '', player1Points, player2Points })
-                setModalState(false)
+  if (!session?.user.email) return null
+
+  return (
+    <Box padding={4}>
+      <Modal
+        open={modalState}
+        onClose={() => setModalState(false)}
+      >
+        <Box sx={style}>
+          <Stack spacing={2}>
+            <Typography>{selectedGameData?.player1?.name ?? ''}</Typography>
+            <TextField
+              label='Points'
+              type='number'
+              value={player1Points}
+              onChange={e => {
+                if (parseInt(e.target.value) >= 0) {
+                  setPlayer1Points(parseInt(e.target.value))
+                }
               }}
-            >
-              Submit
-            </Button>
-            <Button color='warning' variant="outlined" endIcon={<ReplayIcon />} onClick={resetScores}>
-              Reset
-            </Button>
-          </Stack>
-        </Stack>
-      </Box>
-    </Modal>
-    <Stack spacing={2}>
-      <Paper>
-        <Box padding={2}>
-          <Stack direction='row' alignItems='center' spacing={1}>
-            <EmojiEventsIcon fontSize="large" />
-            <Typography variant="h6">
-              Tournament leaders
-            </Typography>
-          </Stack>
-          <Stack>
-            <Typography variant='overline'>
-              First - {tournamentLeaders?.first ?? ''}
-            </Typography>
-            <Typography variant='overline'>
-              Second - {tournamentLeaders?.second ?? ''}
-            </Typography>
-            <Typography variant='overline'>
-              Third - {tournamentLeaders?.third ?? ''}
-            </Typography>
+            />
+            <Typography>{selectedGameData?.player2?.name ?? ''}</Typography>
+            <TextField
+              label='Points'
+              type='number'
+              value={player2Points}
+              onChange={e => {
+                if (parseInt(e.target.value) >= 0) {
+                  setPlayer2Points(parseInt(e.target.value))
+                }
+              }}
+            />
+            <Stack direction='row' spacing={2}>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  updatePointsMutation({ gameId: selectedGame ?? '', player1Points, player2Points })
+                  setModalState(false)
+                }}
+              >
+                Submit
+              </Button>
+              <Button color='warning' variant="outlined" endIcon={<ReplayIcon />} onClick={resetScores}>
+                Reset
+              </Button>
+            </Stack>
           </Stack>
         </Box>
-      </Paper>
-      {tournament ? <RenderTables
-        tournament={tournament}
-        setModalState={setModalState}
-        setSelectedGame={setSelectedGame}
-        dark={dark}
-        userEmail={session?.user.email}
-      /> : null}
-    </Stack>
-  </Box>
+      </Modal>
+      <Stack spacing={2}>
+        <Paper>
+          <Box padding={2}>
+            <Stack direction='row' alignItems='center' spacing={1}>
+              <EmojiEventsIcon fontSize="large" />
+              <Typography variant="h6">
+                Tournament leaders
+              </Typography>
+            </Stack>
+            <Stack>
+              <Typography variant='overline'>
+                First - {tournamentLeaders?.first ?? ''}
+              </Typography>
+              <Typography variant='overline'>
+                Second - {tournamentLeaders?.second ?? ''}
+              </Typography>
+              <Typography variant='overline'>
+                Third - {tournamentLeaders?.third ?? ''}
+              </Typography>
+            </Stack>
+          </Box>
+        </Paper>
+        {tournament && (
+          <RenderTables
+            tournament={tournament}
+            setModalState={setModalState}
+            setSelectedGame={setSelectedGame}
+            dark={dark}
+            userEmail={session.user.email}
+          />
+        )}
+      </Stack>
+    </Box>
+  )
 }
 
 function GroupStageTables({ tournament, games }: { tournament: TournamentWithPlayersAndGamesWithPlayers, games: GameWithPlayers[] }) {
   const pools = games.reduce((acc, game) => {
-    if (!(game.poolId in acc)) {
-      acc[game.poolId] = []
+    if (!(game.poolId! in acc)) {
+      acc[game.poolId!] = []
     }
-    acc[game.poolId].push(game)
+    acc[game.poolId!].push(game)
     return acc
   }, {} as { [key: string]: GameWithPlayers[] })
   const poolIds = Object.keys(pools).sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0))
   const router = useRouter()
 
   const renderPool = (poolId: string, pool: Game[]) => {
-    const distinctPlayerIds = []
+    const distinctPlayerIds: string[] = []
     pool.forEach(game => {
       if (game.player1Id && !distinctPlayerIds.includes(game.player1Id)) {
         distinctPlayerIds.push(game.player1Id)
@@ -316,7 +322,7 @@ function GroupStageTables({ tournament, games }: { tournament: TournamentWithPla
                 <ListItem key={id} disablePadding>
                   <ListItemButton
                     onClick={() => {
-                      router.push(`/tournaments/${tournament.id}/${id}`)
+                      void router.push(`/tournaments/${tournament.id}/${id}`)
                     }}
                   >
                     <Stack direction='row' sx={{ width: '100%' }} justifyContent='space-between'>

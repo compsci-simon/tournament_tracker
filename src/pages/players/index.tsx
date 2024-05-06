@@ -78,11 +78,13 @@ export default function Page() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    const user = users?.filter(u => u.email === session.user.email)[0]
-    setSelectedUser(user)
+    if (session) {
+      const user = users?.filter(u => u.email === session.user.email)[0]
+      setSelectedUser(user)
+    }
   }, [session])
 
-  const fuse = new Fuse(users, {
+  const fuse = new Fuse(users!, {
     keys: ['name']
   })
 
