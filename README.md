@@ -20,6 +20,10 @@ The first type is a multi-stage tournaments, where there are group stages and se
 
 ![](./images/group-stage-view.png)
 
+#### Knockout stage games in the multi-stage tournament
+
+![](./images/knockout-stage-view.png)
+
 ### Knockout stage view in the multi-stage tournament
 
 The second type is round-robbin where everyone plays everyone else. There is no hierarchy to this tournament.
