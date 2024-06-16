@@ -546,12 +546,22 @@ export const tournamentRouter = createTRPCRouter({
         orderBy: {
           time: 'desc'
         },
+        where: {
+          OR: {
+            player1Points: {
+              gt: 0
+            },
+            player2Points: {
+              gt: 0
+            }
+          }
+        },
         include: {
           player1: true,
           player2: true
         }
       })
-      assert(mostRecentGame)
+      // assert(mostRecentGame)
       const latestTournamentWinner = await ctx.prisma.tournament.findFirst({
         where: { winnerId: { not: null } },
         orderBy: { startDate: 'desc' },

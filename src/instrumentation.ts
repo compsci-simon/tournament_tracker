@@ -57,41 +57,43 @@ const startTournament = async (tournamentId: string) => {
   } else if (tournament.type == 'multi-stage') {
     const { gameSchedule, numRounds } = scheduleMultiStageGames(tournament.players.map(p => p.id))
 
+    const data = {
+      games: {
+        create: gameSchedule.map(game => {
+          const newGame: Game & NewGame = game
+          newGame.tournamentId = tournamentId
+          newGame.userGame = {
+            create: []
+          }
+          if (game.player1Id) {
+            newGame.player1 = {
+              connect: {
+                id: game.player1Id
+              }
+            }
+            newGame.userGame.create.push(({ userId: game.player1Id }))
+          }
+          newGame.player1Id = null
+          if (game.player2Id) {
+            newGame.player2 = {
+              connect: {
+                id: game.player2Id
+              }
+            }
+            newGame.userGame.create.push(({ userId: game.player2Id }))
+          }
+          newGame.player2Id = null
+          return newGame
+        })
+      },
+      numRounds
+    }
+
     return await prisma.tournament.update({
       where: {
         id: tournamentId,
       },
-      data: {
-        games: {
-          create: gameSchedule.map(game => {
-            const newGame: Game & NewGame = game
-            newGame.tournamentId = null
-            newGame.userGame = {
-              create: []
-            }
-            if (game.player1Id) {
-              newGame.player1 = {
-                connect: {
-                  id: game.player1Id
-                }
-              }
-              newGame.userGame.create.push(({ userId: game.player1Id }))
-            }
-            newGame.player1Id = null
-            if (game.player2Id) {
-              newGame.player2 = {
-                connect: {
-                  id: game.player2Id
-                }
-              }
-              newGame.userGame.create.push(({ userId: game.player2Id }))
-            }
-            newGame.player2Id = null
-            return newGame
-          })
-        },
-        numRounds
-      }
+      data
     })
   } else {
     throw new Error(`Unknown tournament type: ${tournament.type}`);
@@ -107,15 +109,19 @@ const startTournaments = async () => {
   const currentDateTime = new Date()
   void jobs.forEach((job) => {
     if (job.tournament.startDate <= currentDateTime) {
-      startTournament(job.tournamentId).then(() => {
-        void prisma.tournamentJob.delete({
-          where: {
-            id: job.id
-          }
-        }).then(() => {
-          console.log('deleted tournament job')
-        }).catch(err => console.error(err))
-      }).catch(err => console.error(err))
+      startTournament(job.tournamentId)
+        .then(() => {
+          void prisma.tournamentJob.delete({
+            where: {
+              id: job.id
+            }
+          })
+            .then(() => {
+              console.log('deleted tournament job')
+            })
+            .catch(err => console.error(err))
+        })
+        .catch(err => console.error(err))
     }
   })
 }
