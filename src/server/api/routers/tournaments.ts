@@ -12,7 +12,7 @@ const canStartKnockoutRounds = async (prisma: PrismaClient, tournamentId: string
   const games = await prisma.game.findMany({ where: { tournamentId } })
   const unplayedGroupGame = games
     .filter(game => game.type == 'group')
-    .every(game => game.player1Points == 0 && game.player2Points == 0)
+    .some(game => game.player1Points == 0 && game.player2Points == 0)
   if (unplayedGroupGame) return false;
   const knockoutRoundsHaveStarted = games
     .filter(game => game.type == 'knockout')
@@ -24,6 +24,7 @@ const startKnockoutRounds = async (prisma: PrismaClient, tournamentId: string) =
 
   const canStart = await canStartKnockoutRounds(prisma, tournamentId)
   if (!canStart) return
+  console.log('Starting knockout games')
   const games = await prisma.game.findMany({
     where: {
       tournamentId: tournamentId
