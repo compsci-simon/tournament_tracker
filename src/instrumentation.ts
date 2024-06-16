@@ -60,29 +60,30 @@ const startTournament = async (tournamentId: string) => {
     const data = {
       games: {
         create: gameSchedule.map(game => {
-          const newGame: Game & NewGame = game
-          newGame.tournamentId = tournamentId
+          const newGame: Omit<Game & NewGame, 'tournamentId' | 'player1Id' | 'player2Id' | 'userId'> & Partial<Pick<Game, 'tournamentId' | 'player1Id' | 'player2Id' | 'userId'>> = game
           newGame.userGame = {
             create: []
           }
-          if (game.player1Id) {
+          if (newGame.player1Id) {
             newGame.player1 = {
               connect: {
-                id: game.player1Id
+                id: newGame.player1Id
               }
             }
             newGame.userGame.create.push(({ userId: game.player1Id }))
           }
-          newGame.player1Id = null
-          if (game.player2Id) {
+          if (newGame.player2Id) {
             newGame.player2 = {
               connect: {
-                id: game.player2Id
+                id: newGame.player2Id
               }
             }
             newGame.userGame.create.push(({ userId: game.player2Id }))
           }
-          newGame.player2Id = null
+          delete newGame.tournamentId
+          delete newGame.player1Id
+          delete newGame.player2Id
+          delete newGame.userId
           return newGame
         })
       },
