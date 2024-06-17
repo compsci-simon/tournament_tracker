@@ -32,7 +32,11 @@ If a score has been submitted and you were involved in the game, you will get a 
 
 The second type is round-robbin where everyone plays everyone else. There is no hierarchy to this tournament.
 
-League also provide rating calculations, and updates player's ratings after each game.
+### Scoring
+
+League provides rating calculations, and updates player's ratings after each game. The rating system used is the well know [ELO rating system](https://en.wikipedia.org/wiki/Elo_rating_system). League also provides an additional rating bonus for winning a tournament and decays scores, so that players have to continue playing.
+
+![](./images/decay-and-tournament-bonus.png)
 
 ## Usage
 
