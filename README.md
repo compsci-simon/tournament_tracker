@@ -24,7 +24,11 @@ The first type is a multi-stage tournaments, where there are group stages and se
 
 ![](./images/knockout-stage-view.png)
 
-### Knockout stage view in the multi-stage tournament
+### Notifications
+
+If a score has been submitted and you were involved in the game, you will get a notification.
+
+![](./images/notifications.png)
 
 The second type is round-robbin where everyone plays everyone else. There is no hierarchy to this tournament.
 
