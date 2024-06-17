@@ -271,16 +271,17 @@ function ResponsiveAppBar() {
             <ThemeSwitch defaultChecked value={dark} onChange={() => setDark(!dark)} />
 
             {/* Admin button */}
-            {isAdmin ?
+            {isAdmin && (
               <Link href='/admin' style={{ lineHeight: 0 }}>
-                <AdminPanelSettingsIcon fontSize='large' />
+                <Tooltip title="Admin settings">
+                  <AdminPanelSettingsIcon fontSize='large' />
+                </Tooltip>
               </Link>
-              : null
-            }
+            )}
 
             {/* Notifications */}
             <Box sx={{ flexGrow: 0 }}>
-              <Tooltip title="Open settings">
+              <Tooltip title="Show notifications">
                 <IconButton onClick={handleOpenNotificationsMenu} sx={{ p: 1 }}>
                   {unseenNotifications ?
                     <NotificationAddIcon fontSize='medium' /> :
