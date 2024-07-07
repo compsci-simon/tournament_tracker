@@ -1,4 +1,4 @@
-import { Box, Button, Modal, Paper, Stack, Typography } from "@mui/material"
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Modal, Paper, Select, Stack, TextField, Typography } from "@mui/material"
 
 import { useState } from "react";
 import { DataGrid, GridColDef, GridToolbarContainer } from '@mui/x-data-grid'
@@ -6,6 +6,9 @@ import { api } from "~/utils/api";
 import AddTournament from "~/components/AddTournament";
 import Layout from "~/components/Layout";
 import TabPanel from "~/components/TabPanel";
+import { FaChess } from "react-icons/fa"
+import { FaTableTennis } from "react-icons/fa"
+import { MdOutlineSportsSoccer } from "react-icons/md"
 
 const userColumns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 90 },
@@ -48,6 +51,35 @@ const tournamentColumns: GridColDef[] = [
   },
 ]
 
+export const stringToIcon = (iconName: string) => {
+  switch (iconName) {
+    case 'chess':
+      return <FaChess />
+    case 'table-tennis':
+      return <FaTableTennis />
+    case 'fuseball':
+      return <MdOutlineSportsSoccer />
+    default:
+      return null
+  }
+}
+
+const sportColumns: GridColDef[] = [
+  { field: 'id', headerName: 'ID', width: 90, sortable: false },
+  { field: 'name', headerName: 'Name', width: 150, editable: false, sortable: false },
+  {
+    field: 'icon', headerName: 'Icon', width: 70, editable: false, sortable: false,
+    renderCell(params) {
+      return stringToIcon(params.row.icon)
+    }
+  },
+]
+
+const iconOptions = [
+  { value: 'chess', icon: <FaChess /> },
+  { value: 'table-tennis', icon: <FaTableTennis /> },
+  { value: 'fuseball', icon: <MdOutlineSportsSoccer /> }
+]
 
 function CustomTournamentToolbar() {
   const [addModal, setAddModal] = useState(false)
@@ -83,9 +115,80 @@ function CustomTournamentToolbar() {
   );
 }
 
+function CustomSportsToolbar() {
+  const [addModal, setAddModal] = useState(false)
+  const handleClose = () => { setAddModal(false) }
+  const [sportName, setSportName] = useState('')
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null)
+  const { mutate: createSport } = api.sports.create.useMutation({
+    onSuccess() {
+      handleClose()
+    }
+  })
+
+  return (
+    <>
+      <Dialog
+        open={addModal}
+        onClose={handleClose}
+        maxWidth='xs'
+        TransitionProps={{
+          onEntering: () => {
+            setSportName('')
+            setSelectedIcon(null)
+          }
+        }}
+      >
+        <DialogTitle>New Sport</DialogTitle>
+
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <TextField
+              label='Sport name'
+              value={sportName}
+              onChange={e => setSportName(e.target.value)}
+            />
+            <FormControl>
+              <InputLabel id="icon-select">Icon</InputLabel>
+              <Select
+                value={selectedIcon}
+                onChange={e => setSelectedIcon(e.target.value as string)}
+                label='Icon'
+              >
+                {iconOptions.map(iconOption => (
+                  <MenuItem value={iconOption.value}>
+                    <Stack direction='row' spacing={1} alignItems='center'>
+                      <Box>
+                        {iconOption.icon}
+                      </Box>
+                      <Box>
+                        {iconOption.value}
+                      </Box>
+                    </Stack>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions>
+          <Button variant="outlined" color='error' onClick={handleClose}>Close</Button>
+          <Button variant='outlined' disabled={!sportName || !selectedIcon} onClick={() => createSport({ name: sportName, icon: selectedIcon! })}>Save</Button>
+        </DialogActions>
+      </Dialog>
+      <GridToolbarContainer>
+        <Button onClick={() => setAddModal(true)}>New sport</Button>
+      </GridToolbarContainer>
+    </>
+  )
+}
+
 export default function Page() {
   const { data: users } = api.user.getAll.useQuery()
   const { data: tournaments } = api.tournament.getAll.useQuery()
+  const { data: sports } = api.sports.all.useQuery()
+
   const tabs = [
     {
       title: 'Users',
@@ -111,6 +214,24 @@ export default function Page() {
             disableRowSelectionOnClick
             slots={{
               toolbar: CustomTournamentToolbar
+            }}
+            pageSizeOptions={[5]}
+            sx={{ border: 0, minHeight: 500 }}
+          />
+        </Paper>
+      )
+    },
+    {
+      title: 'Sports',
+      padding: 0,
+      content: (
+        <Paper>
+          <DataGrid
+            rows={sports ?? []}
+            columns={sportColumns}
+            disableRowSelectionOnClick
+            slots={{
+              toolbar: CustomSportsToolbar
             }}
             pageSizeOptions={[5]}
             sx={{ border: 0, minHeight: 500 }}

@@ -47,7 +47,6 @@ model User {
     nickName       String?
     avatar         String
     role           String       @default("player")
-    gender         String
     tournaments    Tournament[] @relation(name: "TournamentPlayers")
     tournamentsWon Tournament[] @relation(name: "TournamentWinner")
     player1Games   Game[]       @relation("player1")
@@ -57,7 +56,6 @@ model User {
     trophies       Trophy[]
     accounts       Account[]
     sessions       Session[]
-    emailVerified  DateTime?
     image          String?
     Game           Game[]
 }
@@ -68,6 +66,13 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+model Sport {
+    id         String       @id @default(cuid())
+    name       String
+    icon       String
+    Tournament Tournament[]
 }
 
 model Trophy {
@@ -127,20 +132,20 @@ model Game {
 }
 
 model Tournament {
-    id             String         @id @default(cuid())
-    type           String         @default("round-robbin")
-    createdAt      DateTime       @default(now())
-    startDate      DateTime
-    roundInterval  String
-    emailReminders Boolean
-    numRounds      Int
-    name           String
-    isLocked       Boolean        @default(false)
-    winnerId       String?
-    winner         User?          @relation(name: "TournamentWinner", fields: [winnerId], references: [id])
-    players        User[]         @relation(name: "TournamentPlayers")
-    games          Game[]
-    TournamentJob  TournamentJob?
+    id            String         @id @default(cuid())
+    type          String         @default("round-robbin")
+    createdAt     DateTime       @default(now())
+    startDate     DateTime
+    numRounds     Int
+    name          String
+    isLocked      Boolean        @default(false)
+    winnerId      String?
+    winner        User?          @relation(name: "TournamentWinner", fields: [winnerId], references: [id])
+    players       User[]         @relation(name: "TournamentPlayers")
+    games         Game[]
+    TournamentJob TournamentJob?
+    sport         Sport          @relation(fields: [sportId], references: [id])
+    sportId       String
 }
 
 model TournamentJob {

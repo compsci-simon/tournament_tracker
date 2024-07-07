@@ -26,6 +26,7 @@ import { GameNotification } from '~/types';
 import assert from 'assert';
 
 const pages: { title: string, link: string }[] = [
+  { title: 'Sports', link: 'sports' },
   { title: 'Tournaments', link: 'tournaments' },
   { title: 'Players', link: 'players' },
   { title: 'Games', link: 'games' },
@@ -251,6 +252,8 @@ function ResponsiveAppBar() {
               ))}
             </Menu>
           </Box>
+
+          {/* `pages` is used to generate a list of links */}
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
               <Button

@@ -16,24 +16,16 @@ export const userRouter = createTRPCRouter({
       email: z.string().min(3),
       password: z.string().min(4),
       name: z.string().min(1),
-      gender: z.string().min(1)
     }))
     .mutation(async ({ ctx, input }) => {
-      const user = await ctx.prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: input.email },
-            { name: input.name }
-          ]
-        }
-      })
+      const user = await ctx.prisma.user.findFirst({ where: { email: input.email } })
       if (user) {
         return new TRPCError({
           message: 'User already exists',
           code: 'CONFLICT'
         })
       }
-      const avatar = generateAvatar(input.name, input.gender)
+      const avatar = generateAvatar(input.name)
       const isAdmin = (await ctx.prisma.user.findMany()).length == 0
       return await ctx.prisma.user.create({
         data: {
@@ -41,7 +33,6 @@ export const userRouter = createTRPCRouter({
           password: input.password,
           name: input.name,
           avatar,
-          gender: input.gender,
           role: isAdmin ? 'admin' : 'player',
           ratings: {
             create: [({ rating: 1200, ratingChange: 0, cause: 'initialization' })]

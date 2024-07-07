@@ -339,21 +339,30 @@ export const tournamentRouter = createTRPCRouter({
     .input(z.object({
       name: z.string().min(1),
       startDate: z.date(),
-      emailReminders: z.boolean(),
-      roundInterval: z.string().min(1),
-      tournamentType: z.string()
+      tournamentType: z.string(),
+      sportId: z.string()
     }))
     .mutation(async ({ ctx, input }) => {
+      const found = await ctx.prisma.sport.findFirst({ where: { id: input.sportId } })
+      if (!found) {
+        return new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to find the assosciated sport"
+        })
+      }
       return await ctx.prisma.tournament.create({
         data: {
           name: input.name,
           numRounds: 0,
           startDate: input.startDate,
-          emailReminders: input.emailReminders,
-          roundInterval: input.roundInterval,
           type: input.tournamentType,
           TournamentJob: {
             create: {}
+          },
+          sport: {
+            connect: {
+              id: input.sportId
+            }
           }
         }
       })

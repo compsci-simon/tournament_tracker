@@ -30,7 +30,6 @@ function SignUpPage() {
       name,
       email,
       password: SHA256(password).toString(),
-      gender
     })
   }
 
@@ -68,20 +67,6 @@ function SignUpPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl>
-                <FormLabel>Gender</FormLabel>
-                <RadioGroup
-                  aria-labelledby="demo-controlled-radio-buttons-group"
-                  name="controlled-radio-buttons-group"
-                  value={gender}
-                  onChange={e => setGender(e.target.value)}
-                >
-                  <FormControlLabel value="female" control={<Radio />} label="Female" />
-                  <FormControlLabel value="male" control={<Radio />} label="Male" />
-                </RadioGroup>
-              </FormControl>
             </Grid>
             <Grid item xs={12}>
               <Button variant='outlined' onClick={handleSignUp}>
