@@ -235,7 +235,7 @@ type coordinate = {
   y: number
 }
 
-const getGroupSize = (totalPlayers: number) => {
+export const getGroupSize = (totalPlayers: number) => {
   // Simplified group size optimization for round-robin tournaments
   // Objective: balance group sizes while preferring groups close to 4 players
   if (totalPlayers <= 6) return Math.max(3, totalPlayers)
@@ -248,12 +248,21 @@ const getGroupSize = (totalPlayers: number) => {
     const numCompleteGroups = Math.floor(totalPlayers / groupSize)
     const remainder = totalPlayers % groupSize
     
-    // Calculate group size variance (prefer even group distribution)
-    const avgGroupSize = totalPlayers / (numCompleteGroups + (remainder > 0 ? 1 : 0))
-    const sizeVariance = remainder > 0 ? Math.abs(groupSize - (groupSize + remainder)) : 0
+    // Calculate balance score - heavily penalize remainders that create very small groups
+    let balanceScore = 0
+    if (remainder > 0) {
+      // If remainder is too small (< 3), it's a very poor distribution
+      if (remainder < 3) {
+        balanceScore = 10 // Heavy penalty for groups smaller than 3
+      } else {
+        // Light penalty for uneven but acceptable distribution
+        balanceScore = 1
+      }
+    }
     
-    // Prefer group sizes close to 4, penalize high variance
-    const score = Math.abs(groupSize - 4) + (sizeVariance * 0.5)
+    // Prefer group sizes close to 4, but balance is more important
+    const sizePreference = Math.abs(groupSize - 4) * 0.5
+    const score = sizePreference + balanceScore
     
     if (score < bestScore) {
       bestScore = score

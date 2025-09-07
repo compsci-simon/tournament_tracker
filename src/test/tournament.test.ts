@@ -5,7 +5,8 @@ import {
   roundRobinScheduleGames, 
   calculateNewRatings,
   getLeadersFromList,
-  calculatedNodePositions
+  calculatedNodePositions,
+  getGroupSize
 } from "../utils/tournament";
 
 const players = ['simon', 'ben', 'lienke', 'liv', 'james', 'lisa', 'shailen', 'paul']
@@ -286,6 +287,91 @@ describe('edge cases and error handling', () => {
     expect(schedule[0].player1Id).toBeTruthy()
     expect(schedule[0].player2Id).toBeTruthy()
     expect(schedule[0].player1Id).not.toBe(schedule[0].player2Id)
+  })
+
+})
+
+describe('getGroupSize optimization', () => {
+
+  test('Small groups (1-6 players) return appropriate sizes', () => {
+    // Edge case: 1 player should return 3 (minimum viable group)
+    expect(getGroupSize(1)).toBe(3)
+    
+    // Small groups should return themselves or minimum of 3
+    expect(getGroupSize(2)).toBe(3)
+    expect(getGroupSize(3)).toBe(3)
+    expect(getGroupSize(4)).toBe(4)
+    expect(getGroupSize(5)).toBe(5)
+    expect(getGroupSize(6)).toBe(6)
+  })
+
+  test('Prefers group sizes close to 4 for larger groups', () => {
+    // 7 players: groups of 4 would leave 3 remainder, groups of 3 would be 2+1
+    expect(getGroupSize(7)).toBe(4) // 1 group of 4, 1 group of 3
+    
+    // 8 players: perfect for groups of 4
+    expect(getGroupSize(8)).toBe(4) // 2 groups of 4
+    
+    // 9 players: groups of 3 create even distribution (3 groups of 3)
+    expect(getGroupSize(9)).toBe(3) // 3 groups of 3
+    
+    // 10 players: groups of 5 create even distribution (2 groups of 5)
+    expect(getGroupSize(10)).toBe(5) // 2 groups of 5
+  })
+
+  test('Optimizes for balanced group distribution', () => {
+    // 12 players: multiple viable options (3,4,6) - should prefer 4
+    expect(getGroupSize(12)).toBe(4) // 3 groups of 4 (perfect balance)
+    
+    // 15 players: groups of 3 or 5 work well
+    expect(getGroupSize(15)).toBe(3) // 5 groups of 3 (perfect balance)
+    
+    // 16 players: groups of 4 are optimal
+    expect(getGroupSize(16)).toBe(4) // 4 groups of 4 (perfect balance)
+  })
+
+  test('Handles larger tournaments effectively', () => {
+    // 20 players: groups of 4 or 5 work well
+    expect(getGroupSize(20)).toBe(4) // 5 groups of 4 (perfect balance)
+    
+    // 24 players: multiple good options, should prefer close to 4
+    expect(getGroupSize(24)).toBe(4) // 6 groups of 4 (perfect balance)
+    
+    // 30 players: groups of 5 or 6 work well
+    expect(getGroupSize(30)).toBe(3) // 10 groups of 3 (perfect balance)
+  })
+
+  test('Group size stays within reasonable bounds', () => {
+    // Test various player counts to ensure group size is always 3-6
+    const playerCounts = [1, 7, 11, 13, 17, 19, 23, 25, 31, 37, 50, 100]
+    
+    playerCounts.forEach(count => {
+      const groupSize = getGroupSize(count)
+      expect(groupSize).toBeGreaterThanOrEqual(3)
+      expect(groupSize).toBeLessThanOrEqual(6)
+    })
+  })
+
+  test('Consistent results for same input', () => {
+    // Function should be deterministic
+    const testCounts = [8, 12, 16, 20, 24]
+    
+    testCounts.forEach(count => {
+      const result1 = getGroupSize(count)
+      const result2 = getGroupSize(count)
+      expect(result1).toBe(result2)
+    })
+  })
+
+  test('Preference for size 4 when scores are equal', () => {
+    // Test cases where multiple group sizes might have similar scores
+    // The algorithm should prefer 4 when possible
+    
+    // 8 players: group size 4 should be optimal (2 groups of 4)
+    expect(getGroupSize(8)).toBe(4)
+    
+    // 12 players: group size 4 should be optimal (3 groups of 4)
+    expect(getGroupSize(12)).toBe(4)
   })
 
 })
