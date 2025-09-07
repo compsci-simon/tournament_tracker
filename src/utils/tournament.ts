@@ -53,8 +53,8 @@ function shuffleArray(array: string[]) {
     const j = Math.floor(Math.random() * (i + 1));
     if (array[i] && array[j]) {
       const temp = array[i]
-      array[i] == array[j]
-      array[j] == temp
+      array[i] = array[j]
+      array[j] = temp
     }
   }
   return array;
@@ -236,21 +236,40 @@ type coordinate = {
 }
 
 const getGroupSize = (totalPlayers: number) => {
-  const groupSizes: { [key: number]: { ratio: number, groupSize: number } } = {}
-  for (let groupSize = 2; groupSize < totalPlayers; groupSize++) {
+  // Simplified group size optimization for round-robin tournaments
+  // Objective: balance group sizes while preferring groups close to 4 players
+  if (totalPlayers <= 6) return Math.max(3, totalPlayers)
+  
+  let bestSize = 4
+  let bestScore = Infinity
+  
+  // Test group sizes from 3 to 6 (optimal range for competition)
+  for (let groupSize = 3; groupSize <= 6; groupSize++) {
+    const numCompleteGroups = Math.floor(totalPlayers / groupSize)
     const remainder = totalPlayers % groupSize
-    groupSizes[groupSize] = {
-      groupSize,
-      ratio: (1 + remainder * Math.pow(remainder, 2)) + (0.2 * (1 + Math.abs(groupSize - 4)))
+    
+    // Calculate group size variance (prefer even group distribution)
+    const avgGroupSize = totalPlayers / (numCompleteGroups + (remainder > 0 ? 1 : 0))
+    const sizeVariance = remainder > 0 ? Math.abs(groupSize - (groupSize + remainder)) : 0
+    
+    // Prefer group sizes close to 4, penalize high variance
+    const score = Math.abs(groupSize - 4) + (sizeVariance * 0.5)
+    
+    if (score < bestScore) {
+      bestScore = score
+      bestSize = groupSize
     }
   }
-  const sizes = Object.values(groupSizes).sort((a, b) => a.ratio - b.ratio)
-  return sizes.at(0)?.groupSize ?? 4
+  
+  return bestSize
 }
 
 export const scheduleMultiStageGames = (players: string[]) => {
   const matches: Game[] = []
   const totalPlayers = players.length
+  if (totalPlayers < 2) {
+    return { gameSchedule: matches, numRounds: 0 } // No games possible with less than 2 players
+  }
   const groupSize = getGroupSize(totalPlayers)
   const baseGroup = 'A'
 
@@ -339,6 +358,7 @@ export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinat
     const stageGames = games
       .filter(game => game.level == i)
       .sort((gameA, gameB) => {
+        // Parent-Child Positioning Algorithm, topological ordering of nodes based on parents
         if (i > 0) {
           const AParentsMinYIndex = Math.min(...twoDGamesArray[i - 1]
             .filter(node => node.nextRoundId == gameA.id)
@@ -357,6 +377,7 @@ export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinat
   }
 
   twoDGamesArray.forEach((stage: Game[], i) => {
+    // Exponential spatial algorithm to calculate spacing and offset
     const yDiff = yDiffBase * Math.pow(2, i)
     const yBase = (Math.pow(2, i) - 1) * (yDiffBase / 2)
     const xBase = i * xDiff
@@ -364,8 +385,8 @@ export const calculatedNodePositions = (topLeft: coordinate, botRight: coordinat
       const newNode: Node = {
         id: game.id,
         position: {
-          x: xBase,
-          y: yBase + j * yDiff
+          x: topLeft.x + xBase,
+          y: topLeft.y + yBase + j * yDiff
         },
         data: game,
         type: 'knockoutNode'
