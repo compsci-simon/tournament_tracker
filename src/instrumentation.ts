@@ -171,8 +171,17 @@ const eloDecay = async () => {
 export const register = () => {
   void startTournaments()
   void eloDecay()
-  setInterval(() => {
+
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  const msUntilMidnight = midnight.getTime() - now.getTime();
+  setTimeout(() => {
     void startTournaments()
     void eloDecay()
-  }, DayMilliseconds)
+    setInterval(() => {
+      void startTournaments()
+      void eloDecay()
+    }, DayMilliseconds)
+  }, msUntilMidnight)
 }

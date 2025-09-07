@@ -30,6 +30,8 @@ const KnockoutTree = ({ games }: { games: Game[] }) => {
           nodes={nodes}
           edges={edges}
           fitView
+          panOnDrag={false}
+          zoomOnScroll={false}
           zoomOnDoubleClick={false}
           proOptions={{ hideAttribution: true }}
         />
