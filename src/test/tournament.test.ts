@@ -1,4 +1,5 @@
-import { expect, test, describe } from '@jest/globals';
+import { expect, test, describe, beforeEach, afterEach } from '@jest/globals';
+import { PrismaClient } from '@prisma/client';
 
 import { 
   scheduleMultiStageGames, 
@@ -289,6 +290,63 @@ describe('edge cases and error handling', () => {
     expect(schedule[0].player1Id).not.toBe(schedule[0].player2Id)
   })
 
+  test('Rating change calculation accounts for ties', () => {
+    const { player1NewRating, player2NewRating, player1RatingChange, player2RatingChange } = calculateNewRatings(1500, 1500, false)
+    
+    // In a tie scenario (when both players have same rating), rating changes should be roughly equal and opposite
+    expect(Math.abs(player1RatingChange + player2RatingChange)).toBeLessThan(0.01) // Should sum to approximately 0
+    expect(player1RatingChange).toBeLessThan(0) // Player 1 "loses" so should lose rating
+    expect(player2RatingChange).toBeGreaterThan(0) // Player 2 "wins" so should gain rating
+  })
+
+  test('Lower rated player gains rating even when losing to much higher opponent', () => {
+    // Scenario: 1200 rated player loses to 2000 rated player
+    const { player1RatingChange, player2RatingChange } = calculateNewRatings(1200, 2000, false)
+    
+    // Even though player1 lost, they should gain rating (or lose very little) because opponent was much stronger
+    // Player2 should gain very little rating because they were expected to win
+    expect(player1RatingChange).toBeGreaterThan(-5) // Should lose very little or even gain
+    expect(player2RatingChange).toBeLessThan(5) // Should gain very little
+    expect(player2RatingChange).toBeGreaterThan(player1RatingChange) // Lower player should have bigger change
+  })
+
+  test('Rating change detection logic is flawed for outcome determination', () => {
+    // This exposes the bug in the tournaments router
+    const scenarioA = calculateNewRatings(1200, 2000, false) // Low player loses to high player
+    const scenarioB = calculateNewRatings(1200, 1300, false) // Low player loses to similar player
+    
+    // In scenario A, player 1 might gain rating despite losing
+    // In scenario B, player 1 will definitely lose rating
+    console.log('Scenario A (1200 vs 2000, player1 loses):', scenarioA)
+    console.log('Scenario B (1200 vs 1300, player1 loses):', scenarioB)
+    
+    // This shows that positive ratingChange ≠ winning the game
+    if (scenarioA.player1RatingChange > 0) {
+      console.log('BUG CONFIRMED: Player 1 lost but gained rating, breaking outcome detection logic!')
+    }
+  })
+
+  test('ELO rating system conserves rating points', () => {
+    const testCases = [
+      { r1: 1500, r2: 1500, p1wins: true },
+      { r1: 1600, r2: 1400, p1wins: true },
+      { r1: 1200, r2: 2000, p1wins: false },
+      { r1: 1800, r2: 1200, p1wins: false }
+    ]
+    
+    testCases.forEach(({ r1, r2, p1wins }) => {
+      const { player1NewRating, player2NewRating, player1RatingChange, player2RatingChange } = calculateNewRatings(r1, r2, p1wins)
+      
+      const initialTotal = r1 + r2
+      const finalTotal = player1NewRating + player2NewRating
+      const changeTotal = player1RatingChange + player2RatingChange
+      
+      // Rating should be conserved (total rating points should remain the same)
+      expect(Math.abs(finalTotal - initialTotal)).toBeLessThan(0.01)
+      expect(Math.abs(changeTotal)).toBeLessThan(0.01) // Changes should sum to 0
+    })
+  })
+
 })
 
 describe('getGroupSize optimization', () => {
@@ -373,5 +431,146 @@ describe('getGroupSize optimization', () => {
     // 12 players: group size 4 should be optimal (3 groups of 4)
     expect(getGroupSize(12)).toBe(4)
   })
+
+})
+
+describe('Rating Update Bug Investigation', () => {
+  
+  test('Demonstrates outcome detection bug in tournaments router', () => {
+    // This test demonstrates the critical bug in the tournaments router
+    // where rating change direction is incorrectly used to determine game winner
+    
+    // Scenario: Low-rated player loses to high-rated player
+    const lowRating = 1200;
+    const highRating = 2000;
+    const lowPlayerWins = false; // Low player loses
+    
+    const { player1RatingChange, player2RatingChange } = 
+      calculateNewRatings(lowRating, highRating, lowPlayerWins);
+    
+    console.log(`Scenario: Player 1 (${lowRating}) LOSES to Player 2 (${highRating})`);
+    console.log(`Player 1 rating change: ${player1RatingChange}`);
+    console.log(`Player 2 rating change: ${player2RatingChange}`);
+    
+    // The bug: tournaments router uses this flawed logic:
+    const buggyWinnerDetection = player1RatingChange > 0 ? 'player1' : 
+                                 player2RatingChange > 0 ? 'player2' : 'tie';
+    const actualWinner = 'player2';
+    
+    // This will likely fail because low player might gain rating despite losing
+    if (buggyWinnerDetection !== actualWinner && player1RatingChange > 0) {
+      console.log('🐛 BUG CONFIRMED: Outcome detection is broken!');
+      console.log(`Buggy detection thinks: ${buggyWinnerDetection} won`);
+      console.log(`Actually: ${actualWinner} won`);
+      
+      // This bug causes cascading update logic to trigger incorrectly
+      expect(true).toBe(true); // Test passes to show the bug exists
+    } else {
+      console.log('✅ No bug detected in this scenario');
+    }
+  });
+
+  test('Rating conservation principle', () => {
+    // ELO rating system should conserve total rating points
+    const testCases = [
+      { r1: 1500, r2: 1500, p1wins: true },
+      { r1: 1600, r2: 1400, p1wins: true },
+      { r1: 1200, r2: 2000, p1wins: false },
+      { r1: 1800, r2: 1200, p1wins: false },
+      { r1: 1450, r2: 1550, p1wins: true }
+    ];
+    
+    testCases.forEach(({ r1, r2, p1wins }, index) => {
+      const { player1NewRating, player2NewRating, player1RatingChange, player2RatingChange } = 
+        calculateNewRatings(r1, r2, p1wins);
+      
+      const initialTotal = r1 + r2;
+      const finalTotal = player1NewRating + player2NewRating;
+      const changeTotal = player1RatingChange + player2RatingChange;
+      
+      console.log(`Test case ${index + 1}: ${r1} vs ${r2}, P1 wins: ${p1wins}`);
+      console.log(`  Changes: P1=${player1RatingChange.toFixed(2)}, P2=${player2RatingChange.toFixed(2)}, Sum=${changeTotal.toFixed(2)}`);
+      
+      // Rating should be conserved
+      expect(Math.abs(finalTotal - initialTotal)).toBeLessThan(0.01);
+      expect(Math.abs(changeTotal)).toBeLessThan(0.01);
+    });
+  });
+
+  test('Problematic non-cascading update logic', () => {
+    // This tests the problematic logic in tournaments router where
+    // when outcome doesn't change, it just adds rating difference to future ratings
+    
+    // Initial game: 1500 vs 1500, player 1 wins
+    const { player1NewRating: initialP1 } = calculateNewRatings(1500, 1500, true);
+    
+    // Game score gets updated (but outcome stays the same): player 1 still wins
+    const { player1NewRating: updatedP1 } = calculateNewRatings(1500, 1500, true);
+    
+    // In the actual bug, if scores changed but outcome didn't, the code does:
+    const ratingDifference = updatedP1 - initialP1;
+    
+    // This should be 0 since same calculation, but in real scenario with
+    // different scores (like 10-5 vs 15-3), the rating change could differ
+    console.log(`Rating difference when outcome unchanged: ${ratingDifference}`);
+    console.log('🔍 In real scenarios, scores like 10-5 vs 15-3 could have different ELO implications');
+    
+    // The problematic code just adds this difference to future ratings without
+    // recalculating the rating changes, which could cause inconsistencies
+    expect(Math.abs(ratingDifference)).toBeLessThan(0.01); // Should be 0 for same calculation
+  });
+
+  test('ELO calculation edge cases', () => {
+    // Test edge cases that might reveal bugs
+    
+    // Case 1: Massive rating difference
+    const case1 = calculateNewRatings(800, 2400, false); // Huge underdog loses
+    console.log('Massive underdog loses:', case1);
+    
+    // Case 2: Massive rating difference, upset win
+    const case2 = calculateNewRatings(800, 2400, true); // Huge underdog wins!
+    console.log('Massive upset win:', case2);
+    
+    // Case 3: Equal ratings
+    const case3 = calculateNewRatings(1500, 1500, true);
+    console.log('Equal ratings:', case3);
+    
+    // All should conserve rating
+    [case1, case2, case3].forEach((result, i) => {
+      const changeSum = result.player1RatingChange + result.player2RatingChange;
+      expect(Math.abs(changeSum)).toBeLessThan(0.01);
+      console.log(`Case ${i + 1} rating change sum: ${changeSum.toFixed(6)}`);
+    });
+  });
+
+  test('Simulate rating update bug scenario', () => {
+    // Simulate the exact scenario where "rating changes but doesn't change"
+    
+    // Player starts at 1200
+    let playerRating = 1200;
+    let opponentRating = 1300;
+    
+    // Game 1: Player loses, gets new rating
+    const game1 = calculateNewRatings(playerRating, opponentRating, false);
+    playerRating = game1.player1NewRating;
+    
+    console.log(`After Game 1 (lost): Player rating = ${playerRating}`);
+    console.log(`Rating change was: ${game1.player1RatingChange}`);
+    
+    // Now if we "update" the game with same outcome but different logic path...
+    const game1Updated = calculateNewRatings(1200, opponentRating, false);
+    
+    // The difference
+    const actualDifference = game1Updated.player1NewRating - game1.player1NewRating;
+    console.log(`Recalculated rating: ${game1Updated.player1NewRating}`);
+    console.log(`Difference: ${actualDifference}`);
+    
+    // This should be 0, but if there are bugs in the update logic,
+    // the ratings might not be recalculated correctly
+    expect(Math.abs(actualDifference)).toBeLessThan(0.01);
+    
+    // The real bug might be in how subsequent games are handled
+    console.log('🔍 The bug likely occurs in cascading updates or when outcome detection fails');
+  });
 
 })

@@ -5,7 +5,7 @@ import { getServerSettings, ServerSettings } from "./utils/utils"
 import { Game, Rating } from "@prisma/client"
 
 type ConnectType = { connect: { id: string } }
-type NewGame = { userGame?: { create: any[] }, player1?: ConnectType, player2?: ConnectType }
+type NewGame = { player1?: ConnectType, player2?: ConnectType }
 
 const startTournament = async (tournamentId: string) => {
   const tournament = await prisma.tournament.findFirst({
@@ -27,18 +27,13 @@ const startTournament = async (tournamentId: string) => {
       data: {
         games: {
           create: schedule.map(game => {
-            const gameToReturn: NewGame = {
-              userGame: {
-                create: []
-              },
-            }
+            const gameToReturn: NewGame = {}
             if (game.player1Id) {
               gameToReturn.player1 = {
                 connect: {
                   id: game.player1Id
                 }
               }
-              gameToReturn.userGame!.create.push(({ userId: game.player1Id }))
             }
             if (game.player2Id) {
               gameToReturn.player2 = {
@@ -46,7 +41,6 @@ const startTournament = async (tournamentId: string) => {
                   id: game.player2Id
                 }
               }
-              gameToReturn.userGame!.create.push(({ userId: game.player2Id }))
             }
             return gameToReturn
           })
@@ -61,16 +55,12 @@ const startTournament = async (tournamentId: string) => {
       games: {
         create: gameSchedule.map(game => {
           const newGame: Omit<Game & NewGame, 'tournamentId' | 'player1Id' | 'player2Id' | 'userId'> & Partial<Pick<Game, 'tournamentId' | 'player1Id' | 'player2Id' | 'userId'>> = game
-          newGame.userGame = {
-            create: []
-          }
           if (newGame.player1Id) {
             newGame.player1 = {
               connect: {
                 id: newGame.player1Id
               }
             }
-            newGame.userGame.create.push(({ userId: game.player1Id }))
           }
           if (newGame.player2Id) {
             newGame.player2 = {
@@ -78,7 +68,6 @@ const startTournament = async (tournamentId: string) => {
                 id: newGame.player2Id
               }
             }
-            newGame.userGame.create.push(({ userId: game.player2Id }))
           }
           delete newGame.tournamentId
           delete newGame.player1Id

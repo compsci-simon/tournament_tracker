@@ -127,12 +127,6 @@ export const gamesRouter = createTRPCRouter({
               id: player2Id
             }
           },
-          userGame: {
-            create: [
-              ({ userId: player1Id }),
-              ({ userId: player2Id })
-            ]
-          },
           ratings: {
             create: [
               {

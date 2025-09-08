@@ -51,7 +51,6 @@ model User {
     tournamentsWon Tournament[] @relation(name: "TournamentWinner")
     player1Games   Game[]       @relation("player1")
     player2Games   Game[]       @relation("player2")
-    userGames      UserGame[]
     ratings        Rating[]
     trophies       Trophy[]
     accounts       Account[]
@@ -94,15 +93,6 @@ model Rating {
     cause        String
 }
 
-model UserGame {
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId String
-    game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
-    gameId String
-
-    @@id([userId, gameId])
-}
-
 // TODO: We need to remove the round field.
 model Game {
     id                 String             @id @default(cuid())
@@ -124,7 +114,6 @@ model Game {
     lastModifiedUserId String?
     lastModifiedUser   User?              @relation(fields: [userId], references: [id])
     ratings            Rating[]
-    userGame           UserGame[]
     // nextRoundId is the ID of the next game, given this is a knockout game
     nextRoundId        String?
     notifications      GameNotification[]
